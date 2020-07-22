@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -52,24 +52,20 @@ import com.microsoft.gittf.core.test.Util;
 import com.microsoft.gittf.core.util.RepositoryUtil;
 
 public class FetchTaskTest
-    extends TestCase
-{
+        extends TestCase {
     protected void setUp()
-        throws Exception
-    {
+            throws Exception {
         Util.setUp(getName());
     }
 
     protected void tearDown()
-        throws Exception
-    {
+            throws Exception {
         Util.tearDown(getName());
     }
 
     @Test
     public void testFetchShallow()
-        throws Exception
-    {
+            throws Exception {
         URI projectCollectionURI = new URI("http://fakeCollection:8080/tfs/DefaultCollection"); //$NON-NLS-1$
         String tfsPath = "$/project"; //$NON-NLS-1$
         String gitRepositoryPath = Util.getRepositoryFile(getName()).getAbsolutePath();
@@ -92,11 +88,11 @@ public class FetchTaskTest
         date.set(2012, 11, 12, 18, 15);
 
         MockChangesetProperties changesetProperties = new MockChangesetProperties("ownerDisplayName", //$NON-NLS-1$
-            "ownerName", //$NON-NLS-1$
-            "committerDisplayName", //$NON-NLS-1$
-            "committerName", //$NON-NLS-1$
-            "comment", //$NON-NLS-1$
-            date);
+                "ownerName", //$NON-NLS-1$
+                "committerDisplayName", //$NON-NLS-1$
+                "committerName", //$NON-NLS-1$
+                "comment", //$NON-NLS-1$
+                date);
         mockVersionControlService.updateChangesetInformation(changesetProperties, 3);
 
         final Repository repository = RepositoryUtil.createNewRepository(gitRepositoryPath, false);
@@ -113,11 +109,11 @@ public class FetchTaskTest
         mockVersionControlService.AddFile("$/project/folder/nestedFolder/file1.txt", 4); //$NON-NLS-1$
 
         MockChangesetProperties changesetProperties2 = new MockChangesetProperties("ownerDisplayName4", //$NON-NLS-1$
-            "ownerName4", //$NON-NLS-1$
-            "committerDisplayName4", //$NON-NLS-1$
-            "committerName4", //$NON-NLS-1$
-            "comment4", //$NON-NLS-1$
-            date);
+                "ownerName4", //$NON-NLS-1$
+                "committerDisplayName4", //$NON-NLS-1$
+                "committerName4", //$NON-NLS-1$
+                "comment4", //$NON-NLS-1$
+                date);
         mockVersionControlService.updateChangesetInformation(changesetProperties2, 4);
 
         FetchTask fetchTask = new FetchTask(repository, mockVersionControlService);
@@ -160,26 +156,24 @@ public class FetchTaskTest
         treeWalk.setFilter(TreeFilter.ANY_DIFF);
 
         int count = 0;
-        while (treeWalk.next())
-        {
+        while (treeWalk.next()) {
             ObjectId fileObjectId = treeWalk.getObjectId(1);
             byte[] fileContent = repository.getObjectDatabase().open(fileObjectId, OBJ_BLOB).getBytes();
 
-            switch (count)
-            {
+            switch (count) {
                 case 0:
                     assertTrue(mockVersionControlService.verifyFileContent(fileContent, "$/project/folder/file1.txt", //$NON-NLS-1$
-                        4));
+                            4));
                     break;
                 case 2:
                     assertTrue(mockVersionControlService.verifyFileContent(fileContent, "$/project/folder2/file1.txt", //$NON-NLS-1$
-                        4));
+                            4));
                     break;
                 case 1:
                     assertTrue(mockVersionControlService.verifyFileContent(
-                        fileContent,
-                        "$/project/folder/nestedFolder/file1.txt", //$NON-NLS-1$
-                        4));
+                            fileContent,
+                            "$/project/folder/nestedFolder/file1.txt", //$NON-NLS-1$
+                            4));
                     break;
             }
 
@@ -195,8 +189,7 @@ public class FetchTaskTest
 
     @Test
     public void testFetchDeep()
-        throws Exception
-    {
+            throws Exception {
         URI projectCollectionURI = new URI("http://fakeCollection:8080/tfs/DefaultCollection"); //$NON-NLS-1$
         String tfsPath = "$/project"; //$NON-NLS-1$
         String gitRepositoryPath = Util.getRepositoryFile(getName()).getAbsolutePath();
@@ -219,11 +212,11 @@ public class FetchTaskTest
         date.set(2012, 11, 12, 18, 15);
 
         MockChangesetProperties changesetProperties = new MockChangesetProperties("ownerDisplayName", //$NON-NLS-1$
-            "ownerName", //$NON-NLS-1$
-            "committerDisplayName", //$NON-NLS-1$
-            "committerName", //$NON-NLS-1$
-            "comment", //$NON-NLS-1$
-            date);
+                "ownerName", //$NON-NLS-1$
+                "committerDisplayName", //$NON-NLS-1$
+                "committerName", //$NON-NLS-1$
+                "comment", //$NON-NLS-1$
+                date);
         mockVersionControlService.updateChangesetInformation(changesetProperties, 3);
 
         final Repository repository = RepositoryUtil.createNewRepository(gitRepositoryPath, false);
@@ -240,11 +233,11 @@ public class FetchTaskTest
         mockVersionControlService.AddFile("$/project/folder/nestedFolder/file1.txt", 4); //$NON-NLS-1$
 
         MockChangesetProperties changesetProperties2 = new MockChangesetProperties("ownerDisplayName4", //$NON-NLS-1$
-            "ownerName4", //$NON-NLS-1$
-            "committerDisplayName4", //$NON-NLS-1$
-            "committerName4", //$NON-NLS-1$
-            "comment4", //$NON-NLS-1$
-            date);
+                "ownerName4", //$NON-NLS-1$
+                "committerDisplayName4", //$NON-NLS-1$
+                "committerName4", //$NON-NLS-1$
+                "comment4", //$NON-NLS-1$
+                date);
         mockVersionControlService.updateChangesetInformation(changesetProperties2, 4);
 
         mockVersionControlService.AddFile("$/project/folder/file1.txt", 5); //$NON-NLS-1$
@@ -252,11 +245,11 @@ public class FetchTaskTest
         mockVersionControlService.AddFile("$/project/folder/nestedFolder/file1.txt", 5); //$NON-NLS-1$
 
         MockChangesetProperties changesetProperties3 = new MockChangesetProperties("ownerDisplayName5", //$NON-NLS-1$
-            "ownerName5", //$NON-NLS-1$
-            "committerDisplayName5", //$NON-NLS-1$
-            "committerName5", //$NON-NLS-1$
-            "comment5", //$NON-NLS-1$
-            date);
+                "ownerName5", //$NON-NLS-1$
+                "committerDisplayName5", //$NON-NLS-1$
+                "committerName5", //$NON-NLS-1$
+                "comment5", //$NON-NLS-1$
+                date);
         mockVersionControlService.updateChangesetInformation(changesetProperties3, 5);
 
         FetchTask fetchTask = new FetchTask(repository, mockVersionControlService);
@@ -316,26 +309,24 @@ public class FetchTaskTest
         treeWalk.setFilter(TreeFilter.ANY_DIFF);
 
         int count = 0;
-        while (treeWalk.next())
-        {
+        while (treeWalk.next()) {
             ObjectId fileObjectId = treeWalk.getObjectId(1);
             byte[] fileContent = repository.getObjectDatabase().open(fileObjectId, OBJ_BLOB).getBytes();
 
-            switch (count)
-            {
+            switch (count) {
                 case 0:
                     assertTrue(mockVersionControlService.verifyFileContent(fileContent, "$/project/folder/file1.txt", //$NON-NLS-1$
-                        4));
+                            4));
                     break;
                 case 2:
                     assertTrue(mockVersionControlService.verifyFileContent(fileContent, "$/project/folder2/file1.txt", //$NON-NLS-1$
-                        4));
+                            4));
                     break;
                 case 1:
                     assertTrue(mockVersionControlService.verifyFileContent(
-                        fileContent,
-                        "$/project/folder/nestedFolder/file1.txt", //$NON-NLS-1$
-                        4));
+                            fileContent,
+                            "$/project/folder/nestedFolder/file1.txt", //$NON-NLS-1$
+                            4));
                     break;
             }
 
@@ -351,26 +342,24 @@ public class FetchTaskTest
         treeWalk.setFilter(TreeFilter.ANY_DIFF);
 
         count = 0;
-        while (treeWalk.next())
-        {
+        while (treeWalk.next()) {
             ObjectId fileObjectId = treeWalk.getObjectId(1);
             byte[] fileContent = repository.getObjectDatabase().open(fileObjectId, OBJ_BLOB).getBytes();
 
-            switch (count)
-            {
+            switch (count) {
                 case 0:
                     assertTrue(mockVersionControlService.verifyFileContent(fileContent, "$/project/folder/file1.txt", //$NON-NLS-1$
-                        5));
+                            5));
                     break;
                 case 2:
                     assertTrue(mockVersionControlService.verifyFileContent(fileContent, "$/project/folder2/file1.txt", //$NON-NLS-1$
-                        5));
+                            5));
                     break;
                 case 1:
                     assertTrue(mockVersionControlService.verifyFileContent(
-                        fileContent,
-                        "$/project/folder/nestedFolder/file1.txt", //$NON-NLS-1$
-                        5));
+                            fileContent,
+                            "$/project/folder/nestedFolder/file1.txt", //$NON-NLS-1$
+                            5));
                     break;
             }
 

@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -75,8 +75,7 @@ import com.microsoft.tfs.jni.NTLMEngine;
 import com.microsoft.tfs.jni.NegotiateEngine;
 import com.microsoft.tfs.util.StringHelpers;
 
-public abstract class Command
-{
+public abstract class Command {
     protected final Log log = LogFactory.getLog(this.getClass());
 
     protected Console console;
@@ -95,42 +94,35 @@ public abstract class Command
 
     protected abstract String getCommandName();
 
-    public final void setConsole(final Console console)
-    {
+    public final void setConsole(final Console console) {
         Check.notNull(console, "console"); //$NON-NLS-1$
         this.console = console;
     }
 
-    protected final Console getConsole()
-    {
+    protected final Console getConsole() {
         return console;
     }
 
-    protected String getUsage()
-    {
+    protected String getUsage() {
         return Messages.formatString("Command.UsageFormat", //$NON-NLS-1$
-            ProductInformation.getProductName(),
-            getCommandName(),
-            HelpFormatter.getArgumentSyntax(getPossibleArguments()));
+                ProductInformation.getProductName(),
+                getCommandName(),
+                HelpFormatter.getArgumentSyntax(getPossibleArguments()));
     }
 
-    public void showHelp()
-    {
+    public void showHelp() {
         System.out.println(HelpFormatter.wrap(getUsage()));
         System.out.println();
 
         boolean showArguments = false;
-        for (Argument arg : getPossibleArguments())
-        {
-            if (!arg.getOptions().contains(ArgumentOptions.HIDDEN))
-            {
+        for (Argument arg : getPossibleArguments()) {
+            if (!arg.getOptions().contains(ArgumentOptions.HIDDEN)) {
                 showArguments = true;
                 break;
             }
         }
 
-        if (showArguments)
-        {
+        if (showArguments) {
             System.out.println(Messages.getString("Command.HelpArguments")); //$NON-NLS-1$
             System.out.print(HelpFormatter.getArgumentHelp(getPossibleArguments()));
 
@@ -144,21 +136,18 @@ public abstract class Command
 
     public abstract String getHelpDescription();
 
-    public void setArguments(ArgumentCollection arguments)
-    {
+    public void setArguments(ArgumentCollection arguments) {
         Check.notNull(arguments, "arguments"); //$NON-NLS-1$
 
         this.arguments = arguments;
     }
 
-    public ArgumentCollection getArguments()
-    {
+    public ArgumentCollection getArguments() {
         return arguments;
     }
 
     public int getDepthFromArguments()
-        throws Exception
-    {
+            throws Exception {
         int depth = GitTFConstants.GIT_TF_SHALLOW_DEPTH;
 
         // Validate arguments
@@ -166,25 +155,19 @@ public abstract class Command
         {
             String depthValue = ((ValueArgument) getArguments().getArgument("depth")).getValue(); //$NON-NLS-1$
 
-            try
-            {
+            try {
                 depth = Integer.parseInt(depthValue);
 
-                if (depth <= 0)
-                {
+                if (depth <= 0) {
                     throw new Exception(Messages.formatString("Command.Argument.Depth.ParseErrorFormat", depthValue)); //$NON-NLS-1$
                 }
-            }
-            catch (NumberFormatException e)
-            {
+            } catch (NumberFormatException e) {
                 throw new Exception(Messages.formatString("Command.Argument.Depth.ParseErrorFormat", depthValue)); //$NON-NLS-1$
             }
-        }
-        else if (getArguments().contains("deep")) //$NON-NLS-1$
+        } else if (getArguments().contains("deep")) //$NON-NLS-1$
         {
             depth = Integer.MAX_VALUE;
-        }
-        else if (getArguments().contains("shallow")) //$NON-NLS-1$
+        } else if (getArguments().contains("shallow")) //$NON-NLS-1$
         {
             depth = 1;
         }
@@ -192,13 +175,11 @@ public abstract class Command
         return depth;
     }
 
-    public boolean getDeepFromArguments()
-    {
+    public boolean getDeepFromArguments() {
         if (getArguments().contains("deep")) //$NON-NLS-1$
         {
             return true;
-        }
-        else if (getArguments().contains("shallow")) //$NON-NLS-1$
+        } else if (getArguments().contains("shallow")) //$NON-NLS-1$
         {
             return false;
         }
@@ -206,25 +187,21 @@ public abstract class Command
         return false;
     }
 
-    public boolean isDepthSpecified()
-    {
+    public boolean isDepthSpecified() {
         return getArguments().contains("depth") //$NON-NLS-1$
-            || getArguments().contains("deep") //$NON-NLS-1$
-            || getArguments().contains("shallow"); //$NON-NLS-1$
+                || getArguments().contains("deep") //$NON-NLS-1$
+                || getArguments().contains("shallow"); //$NON-NLS-1$
     }
 
-    public boolean getTagFromArguments()
-    {
+    public boolean getTagFromArguments() {
         return !getArguments().contains("no-tag"); //$NON-NLS-1$
     }
 
-    public boolean getIncludeMetaDataFromArguments()
-    {
+    public boolean getIncludeMetaDataFromArguments() {
         if (getArguments().contains("metadata")) //$NON-NLS-1$
         {
             return true;
-        }
-        else if (getArguments().contains("no-metadata")) //$NON-NLS-1$
+        } else if (getArguments().contains("no-metadata")) //$NON-NLS-1$
         {
             return false;
         }
@@ -232,17 +209,14 @@ public abstract class Command
         return false;
     }
 
-    public boolean isIncludeMetaDataSpecified()
-    {
+    public boolean isIncludeMetaDataSpecified() {
         return getArguments().contains("metadata") //$NON-NLS-1$
-            || getArguments().contains("no-metadata"); //$NON-NLS-1$
+                || getArguments().contains("no-metadata"); //$NON-NLS-1$
     }
 
     protected Repository getRepository()
-        throws Exception
-    {
-        if (gitRepository == null)
-        {
+            throws Exception {
+        if (gitRepository == null) {
             // Construct the git repository
             String gitDir = null;
             if (arguments.contains("git-dir")) //$NON-NLS-1$
@@ -252,8 +226,7 @@ public abstract class Command
 
             gitRepository = RepositoryUtil.findRepository(gitDir);
 
-            if (gitRepository == null)
-            {
+            if (gitRepository == null) {
                 throw new Exception(Messages.getString("Command.RepositoryNotFound")); //$NON-NLS-1$
             }
 
@@ -264,14 +237,11 @@ public abstract class Command
     }
 
     protected GitTFConfiguration getServerConfiguration()
-        throws Exception
-    {
-        if (serverConfiguration == null)
-        {
+            throws Exception {
+        if (serverConfiguration == null) {
             serverConfiguration = GitTFConfiguration.loadFrom(getRepository());
 
-            if (serverConfiguration == null)
-            {
+            if (serverConfiguration == null) {
                 throw new Exception(Messages.getString("Command.ServerConfigurationNotFound")); //$NON-NLS-1$
             }
         }
@@ -279,14 +249,12 @@ public abstract class Command
         return serverConfiguration;
     }
 
-    protected Credentials getDefaultCredentials()
-    {
+    protected Credentials getDefaultCredentials() {
         /*
          * Query the TEE SPNEGO providers to ensure that the appropriate JNI
          * could be loaded.
          */
-        if (!NegotiateEngine.getInstance().isAvailable() && !NTLMEngine.getInstance().isAvailable())
-        {
+        if (!NegotiateEngine.getInstance().isAvailable() && !NTLMEngine.getInstance().isAvailable()) {
             log.warn("Could not load native authentication libraries"); //$NON-NLS-1$
         }
 
@@ -295,14 +263,12 @@ public abstract class Command
          * exists
          */
         else if (!NegotiateEngine.getInstance().supportsCredentialsDefault()
-            && !NTLMEngine.getInstance().supportsCredentialsDefault())
-        {
+                && !NTLMEngine.getInstance().supportsCredentialsDefault()) {
             log.info("Default credentials are not available for authentication (no ticket)"); //$NON-NLS-1$
         }
 
         /* Use default credentials */
-        else
-        {
+        else {
             return new DefaultNTCredentials();
         }
 
@@ -310,40 +276,31 @@ public abstract class Command
     }
 
     private Credentials getCredentials(final Repository repository)
-        throws Exception
-    {
-        if (userCredentials == null)
-        {
+            throws Exception {
+        if (userCredentials == null) {
             final String username;
             final String password;
 
-            if (repository == null)
-            {
+            if (repository == null) {
                 final GitTFConfiguration config = GitTFConfiguration.loadFrom(getRepository());
 
                 username = config.getUsername();
                 password = config.getPassword();
-            }
-            else
-            {
+            } else {
                 username = GitTFConfiguration.getUsername(repository);
                 password = GitTFConfiguration.getPassword(repository);
             }
 
-            if (StringHelpers.isNullOrEmpty(username))
-            {
+            if (StringHelpers.isNullOrEmpty(username)) {
                 userCredentials = getDefaultCredentials();
 
-                if (userCredentials == null)
-                {
+                if (userCredentials == null) {
                     throw new Exception("cancelled"); //$NON-NLS-1$
                 }
-            }
-            else
-            {
+            } else {
                 userCredentials =
-                    new UsernamePasswordCredentials(username, (StringHelpers.isNullOrEmpty(password))
-                        ? promptForPassword() : password);
+                        new UsernamePasswordCredentials(username, (StringHelpers.isNullOrEmpty(password))
+                                ? promptForPassword() : password);
             }
         }
 
@@ -351,10 +308,8 @@ public abstract class Command
     }
 
     protected TFSTeamProjectCollection getConnection()
-        throws Exception
-    {
-        if (connection == null)
-        {
+            throws Exception {
+        if (connection == null) {
             return getConnection(getServerConfiguration().getServerURI(), (Repository) null);
         }
 
@@ -362,10 +317,8 @@ public abstract class Command
     }
 
     protected TFSTeamProjectCollection getConnection(final URI serverURI, final Repository repository)
-        throws Exception
-    {
-        if (connection == null)
-        {
+            throws Exception {
+        if (connection == null) {
             AtomicReference<Credentials> credentials = new AtomicReference<Credentials>();
             credentials.set(getCredentials(repository));
 
@@ -378,67 +331,53 @@ public abstract class Command
     }
 
     private TFSTeamProjectCollection getConnection(final URI serverURI, final AtomicReference<Credentials> credentials)
-        throws Exception
-    {
+            throws Exception {
         Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
         Check.notNull(credentials, "credentials"); //$NON-NLS-1$
 
-        if (connection == null)
-        {
+        if (connection == null) {
             getProgressMonitor().displayMessage(Messages.getString("Command.ConnectingToTFS")); //$NON-NLS-1$
 
             boolean authenticated = false, isHostedServer = false;
             int connectionTryCount = 0;
-            while (!authenticated)
-            {
+            while (!authenticated) {
                 connectionTryCount++;
 
                 connection = new TFSTeamProjectCollection(serverURI, credentials.get(), new GitTFConnectionAdvisor());
 
-                try
-                {
+                try {
                     connection.ensureAuthenticated();
                     authenticated = true;
-                }
-                catch (TECoreException e)
-                {
-                    if (e.getCause() != null && e.getCause() instanceof EndpointNotFoundException)
-                    {
+                } catch (TECoreException e) {
+                    if (e.getCause() != null && e.getCause() instanceof EndpointNotFoundException) {
                         throw new Exception(Messages.formatString(
-                            "Command.InvalidServerMissingCollectionFormat", serverURI.toString()), e); //$NON-NLS-1$                        
+                                "Command.InvalidServerMissingCollectionFormat", serverURI.toString()), e); //$NON-NLS-1$
                     }
 
-                    if (connectionTryCount > 3)
-                    {
-                        if (isHostedServer)
-                        {
+                    if (connectionTryCount > 3) {
+                        if (isHostedServer) {
                             throw new Exception(Messages.formatString(
-                                "Command.FailedToConnectToHostedFormat", serverURI.toString()), e); //$NON-NLS-1$
+                                    "Command.FailedToConnectToHostedFormat", serverURI.toString()), e); //$NON-NLS-1$
                         }
 
                         throw e;
                     }
 
                     if (e instanceof ACSUnauthorizedException
-                        || e instanceof TFSFederatedAuthException
-                        || (e.getCause() != null && (e.getCause() instanceof AuthenticationException || e.getCause() instanceof UnauthorizedException)))
-                    {
-                        if (connectionTryCount == 1)
-                        {
+                            || e instanceof TFSFederatedAuthException
+                            || (e.getCause() != null && (e.getCause() instanceof AuthenticationException || e.getCause() instanceof UnauthorizedException))) {
+                        if (connectionTryCount == 1) {
                             isHostedServer = e instanceof TFSFederatedAuthException;
                         }
 
                         Credentials newCredentials = promptForCredentials(connection.getCredentials());
 
-                        if (newCredentials == null)
-                        {
+                        if (newCredentials == null) {
                             throw e;
                         }
 
                         credentials.set(newCredentials);
-                    }
-                    else
-                    {
+                    } else {
                         throw e;
                     }
                 }
@@ -448,21 +387,16 @@ public abstract class Command
         return connection;
     }
 
-    private static Credentials promptForCredentials(Credentials credentials)
-    {
+    private static Credentials promptForCredentials(Credentials credentials) {
         String username;
         String password;
 
-        if (credentials != null && credentials instanceof UsernamePasswordCredentials)
-        {
+        if (credentials != null && credentials instanceof UsernamePasswordCredentials) {
             username = ((UsernamePasswordCredentials) credentials).getUsername();
-        }
-        else
-        {
+        } else {
             username = promptForUsername();
 
-            if (username == null || username.length() == 0)
-            {
+            if (username == null || username.length() == 0) {
                 return null;
             }
         }
@@ -472,40 +406,30 @@ public abstract class Command
         return new UsernamePasswordCredentials(username, password);
     }
 
-    private static String promptForUsername()
-    {
+    private static String promptForUsername() {
         return prompt(Messages.getString("Command.UsernamePrompt"), true); //$NON-NLS-1$
     }
 
-    private static String promptForPassword()
-    {
+    private static String promptForPassword() {
         return prompt(Messages.getString("Command.PasswordPrompt"), false); //$NON-NLS-1$
     }
 
-    private static String prompt(String prompt, boolean echo)
-    {
+    private static String prompt(String prompt, boolean echo) {
         final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
-        try
-        {
-            if (!echo && !ConsoleUtils.getInstance().disableEcho())
-            {
+        try {
+            if (!echo && !ConsoleUtils.getInstance().disableEcho()) {
                 System.err.println(Messages.getString("Command.PasswordEchoCouldNotBeDisabled")); //$NON-NLS-1$
             }
 
             System.out.print(prompt);
 
             return reader.readLine();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             /* Do not log, may contain sensitive information */
             return null;
-        }
-        finally
-        {
-            if (!echo)
-            {
+        } finally {
+            if (!echo) {
                 System.out.println();
                 ConsoleUtils.getInstance().enableEcho();
             }
@@ -513,14 +437,11 @@ public abstract class Command
     }
 
     protected VersionControlClient getVersionControlClient()
-        throws Exception
-    {
-        if (versionControlClient == null)
-        {
+            throws Exception {
+        if (versionControlClient == null) {
             versionControlClient = getConnection().getVersionControlClient();
 
-            if (versionControlClient == null)
-            {
+            if (versionControlClient == null) {
                 throw new Exception(Messages.getString("Command.ConnectionNotAvailable")); //$NON-NLS-1$
             }
 
@@ -531,10 +452,8 @@ public abstract class Command
     }
 
     protected VersionControlService getVersionControlService()
-        throws Exception
-    {
-        if (versionControlService == null)
-        {
+            throws Exception {
+        if (versionControlService == null) {
             versionControlService = new TfsVersionControlService(getVersionControlClient());
         }
 
@@ -542,97 +461,83 @@ public abstract class Command
     }
 
     protected void verifyGitTfConfigured()
-        throws Exception
-    {
+            throws Exception {
         GitTFConfiguration config = GitTFConfiguration.loadFrom(getRepository());
 
-        if (config == null)
-        {
+        if (config == null) {
             throw new Exception(Messages.getString("Command.GitTfNotConfigured")); //$NON-NLS-1$
         }
     }
 
     protected void verifyMasterBranch()
-        throws Exception
-    {
+            throws Exception {
         final Repository repository = getRepository();
 
-        if (!RepositoryUtil.isEmptyRepository(repository))
-        {
+        if (!RepositoryUtil.isEmptyRepository(repository)) {
             Ref master = repository.getRef(Constants.R_HEADS + Constants.MASTER);
             Ref head = repository.getRef(Constants.HEAD);
             Ref masterHeadRef = master != null ? master.getLeaf() : null;
             Ref currentHeadRef = head != null ? head.getLeaf() : null;
 
-            if (masterHeadRef == null || !masterHeadRef.getName().equals(currentHeadRef.getName()))
-            {
+            if (masterHeadRef == null || !masterHeadRef.getName().equals(currentHeadRef.getName())) {
                 throw new Exception(Messages.getString("Command.MasterNotCurrentBranch")); //$NON-NLS-1$
             }
         }
     }
 
     protected void verifyNonBareRepo()
-        throws Exception
-    {
+            throws Exception {
         Repository repository = getRepository();
 
-        if (repository.isBare())
-        {
+        if (repository.isBare()) {
             throw new Exception(Messages.getString("Command.CommandNeedsNonBare")); //$NON-NLS-1$
         }
     }
 
     protected void verifyRepoSafeState()
-        throws Exception
-    {
+            throws Exception {
         RepositoryState state = getRepository().getRepositoryState();
 
-        switch (state)
-        {
+        switch (state) {
             case APPLY:
                 throw new Exception(Messages.formatString(
-                    "Command.OperationInProgressFormat", Messages.getString("Command.OperationApply"))); //$NON-NLS-1$ //$NON-NLS-2$
+                        "Command.OperationInProgressFormat", Messages.getString("Command.OperationApply"))); //$NON-NLS-1$ //$NON-NLS-2$
 
             case BISECTING:
                 throw new Exception(Messages.formatString(
-                    "Command.OperationInProgressFormat", Messages.getString("Command.OperationBisecting"))); //$NON-NLS-1$ //$NON-NLS-2$
+                        "Command.OperationInProgressFormat", Messages.getString("Command.OperationBisecting"))); //$NON-NLS-1$ //$NON-NLS-2$
 
             case MERGING:
             case MERGING_RESOLVED:
                 throw new Exception(Messages.formatString(
-                    "Command.OperationInProgressFormat", Messages.getString("Command.OperationMerge"))); //$NON-NLS-1$ //$NON-NLS-2$
+                        "Command.OperationInProgressFormat", Messages.getString("Command.OperationMerge"))); //$NON-NLS-1$ //$NON-NLS-2$
 
             case REBASING:
             case REBASING_INTERACTIVE:
             case REBASING_MERGE:
             case REBASING_REBASING:
                 throw new Exception(Messages.formatString(
-                    "Command.OperationInProgressFormat", Messages.getString("Command.OperationRebase"))); //$NON-NLS-1$ //$NON-NLS-2$
+                        "Command.OperationInProgressFormat", Messages.getString("Command.OperationRebase"))); //$NON-NLS-1$ //$NON-NLS-2$
         }
     }
 
     protected void verifyVersionSpec(VersionSpec versionSpec)
-        throws Exception
-    {
-        if (versionSpec instanceof LabelVersionSpec || versionSpec instanceof WorkspaceVersionSpec)
-        {
+            throws Exception {
+        if (versionSpec instanceof LabelVersionSpec || versionSpec instanceof WorkspaceVersionSpec) {
             throw new Exception(Messages.getString("Command.LabelAndWorkspaceVersionSpecsAreNotAllowed")); //$NON-NLS-1$
         }
     }
 
-    protected TaskProgressMonitor getProgressMonitor()
-    {
+    protected TaskProgressMonitor getProgressMonitor() {
         return new ConsoleTaskProgressMonitor(console);
     }
 
     public abstract int run()
-        throws Exception;
+            throws Exception;
 
     private class CommandNonFatalErrorListener
-        implements NonFatalErrorListener
-    {
-        public void onNonFatalError(NonFatalErrorEvent nonFatal)
-        {
+            implements NonFatalErrorListener {
+        public void onNonFatalError(NonFatalErrorEvent nonFatal) {
             log.info(nonFatal.getMessage());
         }
     }

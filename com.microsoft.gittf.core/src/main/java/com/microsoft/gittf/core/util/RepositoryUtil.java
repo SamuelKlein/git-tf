@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -55,61 +55,49 @@ import com.microsoft.tfs.jni.FileSystemAttributes;
 import com.microsoft.tfs.jni.FileSystemUtils;
 import com.microsoft.tfs.util.Platform;
 
-public final class RepositoryUtil
-{
+public final class RepositoryUtil {
     private static final Log log = LogFactory.getLog(RepositoryUtil.class);
 
-    private RepositoryUtil()
-    {
+    private RepositoryUtil() {
     }
 
     /**
      * Creates a new repository
-     * 
-     * @param repositoryPath
-     *        repository path
-     * @param bare
-     *        is bare
-     * 
+     *
+     * @param repositoryPath repository path
+     * @param bare           is bare
      * @return
      * @throws IOException
      */
     public static FileRepository createNewRepository(final String repositoryPath, final boolean bare)
-        throws IOException
-    {
+            throws IOException {
         Check.notNull(repositoryPath, "repositoryPath"); //$NON-NLS-1$
 
         final File repositoryDirectory;
         final File workingDirectory;
 
-        if (bare)
-        {
+        if (bare) {
             workingDirectory = null;
             repositoryDirectory = new File(repositoryPath);
-        }
-        else
-        {
+        } else {
             workingDirectory = new File(repositoryPath);
             repositoryDirectory = new File(workingDirectory, DOT_GIT);
         }
 
         final File directoryToValidate = bare ? repositoryDirectory : workingDirectory;
-        if (directoryToValidate.exists() && directoryToValidate.isFile())
-        {
+        if (directoryToValidate.exists() && directoryToValidate.isFile()) {
             throw new IOException(Messages.formatString("RepositoryUtil.IsNotADirectoryFormat", //$NON-NLS-1$
-                directoryToValidate.getAbsolutePath()));
+                    directoryToValidate.getAbsolutePath()));
         }
 
-        if (!bare && workingDirectory.exists() && workingDirectory.listFiles().length != 0)
-        {
+        if (!bare && workingDirectory.exists() && workingDirectory.listFiles().length != 0) {
             throw new IOException(Messages.formatString("RepositoryUtil.DirectoryNotEmptyFormat", //$NON-NLS-1$
-                workingDirectory.getAbsolutePath()));
+                    workingDirectory.getAbsolutePath()));
         }
 
-        if (repositoryDirectory.exists() && repositoryDirectory.listFiles().length != 0)
-        {
+        if (repositoryDirectory.exists() && repositoryDirectory.listFiles().length != 0) {
             throw new IOException(Messages.formatString("RepositoryUtil.DirectoryNotEmptyFormat", //$NON-NLS-1$
-                repositoryDirectory.getAbsolutePath()));
+                    repositoryDirectory.getAbsolutePath()));
         }
 
         return new FileRepository(repositoryDirectory);
@@ -117,42 +105,37 @@ public final class RepositoryUtil
 
     /**
      * Creates a repository object in the specified directory
-     * 
+     *
      * @param gitDir
      * @return
      * @throws IOException
      */
     public static Repository findRepository(final String gitDir)
-        throws IOException
-    {
+            throws IOException {
         RepositoryBuilder repoBuilder =
-            new RepositoryBuilder().setGitDir(gitDir != null ? new File(gitDir) : null).readEnvironment().findGitDir();
+                new RepositoryBuilder().setGitDir(gitDir != null ? new File(gitDir) : null).readEnvironment().findGitDir();
 
         boolean isBare = false;
 
-        if (repoBuilder.getGitDir() == null)
-        {
+        if (repoBuilder.getGitDir() == null) {
             isBare = true;
             repoBuilder.setGitDir(new File(".")); //$NON-NLS-1$
         }
 
         Repository repository = repoBuilder.build();
 
-        if (isBare)
-        {
+        if (isBare) {
             /*
              * if this is a bare repo we need to check if it has the
              * configuration
              */
             GitTFConfiguration config = GitTFConfiguration.loadFrom(repository);
-            if (config == null)
-            {
+            if (config == null) {
                 return null;
             }
         }
 
-        if (!repository.getDirectory().exists() || !repository.getDirectory().isDirectory())
-        {
+        if (!repository.getDirectory().exists() || !repository.getDirectory().isDirectory()) {
             String directoryName = repository.getDirectory().toString();
             throw new IOException(Messages.formatString("RepositoryUtil.NotGitRepoExceptionFormat", directoryName)); //$NON-NLS-1$
         }
@@ -163,20 +146,18 @@ public final class RepositoryUtil
     /**
      * Determines if there are uncommitted changes in the working directory or
      * not.
-     * 
+     *
      * @param repository
      * @return
      * @throws GitAPIException
      * @throws NoWorkTreeException
      */
     public static boolean hasUncommittedChanges(Repository repository)
-        throws NoWorkTreeException,
-            GitAPIException
-    {
+            throws NoWorkTreeException,
+            GitAPIException {
         Status currentStatus = new Git(repository).status().call();
 
-        if (!currentStatus.isClean())
-        {
+        if (!currentStatus.isClean()) {
             return true;
         }
 
@@ -184,10 +165,8 @@ public final class RepositoryUtil
     }
 
     public static void fixFileAttributes(final Repository repository)
-        throws IOException
-    {
-        if (Platform.isCurrentPlatform(Platform.GENERIC_UNIX))
-        {
+            throws IOException {
+        if (Platform.isCurrentPlatform(Platform.GENERIC_UNIX)) {
             final TreeWalk treeWalk = new NameConflictTreeWalk(repository);
             final Ref headReference = repository.getRef(Constants.HEAD);
             final RevCommit headCommit = new RevWalk(repository).parseCommit(headReference.getObjectId());
@@ -198,12 +177,10 @@ public final class RepositoryUtil
 
             final File workingDirectory = repository.getWorkTree();
 
-            while (treeWalk.next())
-            {
+            while (treeWalk.next()) {
                 final FileMode fileMode = treeWalk.getFileMode(0);
 
-                if (FileMode.EXECUTABLE_FILE == fileMode)
-                {
+                if (FileMode.EXECUTABLE_FILE == fileMode) {
                     final File file = new File(workingDirectory, treeWalk.getPathString());
                     log.debug("Executable: " + file.getAbsolutePath()); //$NON-NLS-1$
 
@@ -219,8 +196,7 @@ public final class RepositoryUtil
     }
 
     public static boolean isEmptyRepository(final Repository repository)
-        throws IOException
-    {
+            throws IOException {
         final RefDatabase refsDB = repository.getRefDatabase();
         final Map<String, Ref> refs = refsDB.getRefs(RefDatabase.ALL);
         return refs.isEmpty();

@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -39,37 +39,29 @@ import com.microsoft.tfs.core.clients.workitem.CheckinWorkItemAction;
 import com.microsoft.tfs.core.clients.workitem.WorkItem;
 
 public abstract class PendingChangesCommand
-    extends Command
-{
+        extends Command {
     private List<WorkItemCheckinInfo> workItemsCheckinInfo = null;
 
     protected RenameMode getRenameModeIfSpecified()
-        throws Exception
-    {
+            throws Exception {
         String renameModeString = getArguments().contains("renamemode") ? //$NON-NLS-1$
-            ((ValueArgument) getArguments().getArgument("renamemode")).getValue() : null; //$NON-NLS-1$
+                ((ValueArgument) getArguments().getArgument("renamemode")).getValue() : null; //$NON-NLS-1$
 
-        if (renameModeString == null)
-        {
+        if (renameModeString == null) {
             return RenameMode.JUSTFILES;
         }
 
-        try
-        {
+        try {
             return RenameMode.valueOf(renameModeString.toUpperCase());
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new Exception(
-                Messages.formatString("PendingChangesCommand.InvalidRenameModeFormat", renameModeString)); //$NON-NLS-1$
+                    Messages.formatString("PendingChangesCommand.InvalidRenameModeFormat", renameModeString)); //$NON-NLS-1$
         }
     }
 
     protected WorkItemCheckinInfo[] getWorkItemCheckinInfo()
-        throws Exception
-    {
-        if (workItemsCheckinInfo == null)
-        {
+            throws Exception {
+        if (workItemsCheckinInfo == null) {
             workItemsCheckinInfo = new ArrayList<WorkItemCheckinInfo>();
             Set<Integer> workItemsProcessedSoFar = new HashSet<Integer>();
 
@@ -77,10 +69,9 @@ public abstract class PendingChangesCommand
             {
                 WorkItem wi = getWorkItem((ValueArgument) resolveArgument);
 
-                if (workItemsProcessedSoFar.contains(wi.getID()))
-                {
+                if (workItemsProcessedSoFar.contains(wi.getID())) {
                     throw new Exception(Messages.formatString(
-                        "PendingChangesCommand.WorkItemSpecifiedMultipleTimesFormat", wi.getID())); //$NON-NLS-1$
+                            "PendingChangesCommand.WorkItemSpecifiedMultipleTimesFormat", wi.getID())); //$NON-NLS-1$
                 }
 
                 workItemsProcessedSoFar.add(wi.getID());
@@ -91,10 +82,9 @@ public abstract class PendingChangesCommand
             {
                 WorkItem wi = getWorkItem((ValueArgument) associateArgument);
 
-                if (workItemsProcessedSoFar.contains(wi.getID()))
-                {
+                if (workItemsProcessedSoFar.contains(wi.getID())) {
                     throw new Exception(Messages.formatString(
-                        "PendingChangesCommand.WorkItemSpecifiedMultipleTimesFormat", wi.getID())); //$NON-NLS-1$
+                            "PendingChangesCommand.WorkItemSpecifiedMultipleTimesFormat", wi.getID())); //$NON-NLS-1$
                 }
 
                 workItemsProcessedSoFar.add(wi.getID());
@@ -106,32 +96,26 @@ public abstract class PendingChangesCommand
     }
 
     private WorkItem getWorkItem(ValueArgument argument)
-        throws Exception
-    {
+            throws Exception {
         int id;
 
-        try
-        {
+        try {
             id = Integer.parseInt(argument.getValue());
 
-            if (id <= 0)
-            {
+            if (id <= 0) {
                 throw new Exception(Messages.formatString(
-                    "PendingChangesCommand.WorkItemInvalidFormat", argument.getValue())); //$NON-NLS-1$
+                        "PendingChangesCommand.WorkItemInvalidFormat", argument.getValue())); //$NON-NLS-1$
             }
-        }
-        catch (NumberFormatException e)
-        {
+        } catch (NumberFormatException e) {
             throw new Exception(Messages.formatString(
-                "PendingChangesCommand.WorkItemInvalidFormat", argument.getValue())); //$NON-NLS-1$
+                    "PendingChangesCommand.WorkItemInvalidFormat", argument.getValue())); //$NON-NLS-1$
         }
 
         WorkItem workItem = getConnection().getWorkItemClient().getWorkItemByID(id);
 
-        if (workItem == null)
-        {
+        if (workItem == null) {
             throw new Exception(Messages.formatString(
-                "PendingChangesCommand.WorkItemDoesNotExistFormat", argument.getValue())); //$NON-NLS-1$
+                    "PendingChangesCommand.WorkItemDoesNotExistFormat", argument.getValue())); //$NON-NLS-1$
         }
 
         return workItem;

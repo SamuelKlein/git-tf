@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -60,8 +60,7 @@ import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
 
 public class CloneTask
-    extends Task
-{
+        extends Task {
     private final URI serverURI;
     private final VersionControlService vcClient;
     private final String tfsPath;
@@ -76,21 +75,19 @@ public class CloneTask
     private static final Log log = LogFactory.getLog(CloneTask.class);
 
     public CloneTask(
-        final URI serverURI,
-        final VersionControlService vcClient,
-        final String tfsPath,
-        final Repository repository)
-    {
+            final URI serverURI,
+            final VersionControlService vcClient,
+            final String tfsPath,
+            final Repository repository) {
         this(serverURI, vcClient, tfsPath, repository, null);
     }
 
     public CloneTask(
-        final URI serverURI,
-        final VersionControlService vcClient,
-        final String tfsPath,
-        final Repository repository,
-        final WorkItemClient witClient)
-    {
+            final URI serverURI,
+            final VersionControlService vcClient,
+            final String tfsPath,
+            final Repository repository,
+            final WorkItemClient witClient) {
         Check.notNull(serverURI, "serverURI"); //$NON-NLS-1$
         Check.notNull(vcClient, "vcClient"); //$NON-NLS-1$
         Check.notNullOrEmpty(tfsPath, "tfsPath"); //$NON-NLS-1$
@@ -103,62 +100,53 @@ public class CloneTask
         this.witClient = witClient;
     }
 
-    public void setBare(final boolean bare)
-    {
+    public void setBare(final boolean bare) {
         this.bare = bare;
     }
 
-    public boolean isBare()
-    {
+    public boolean isBare() {
         return bare;
     }
 
-    public void setVersionSpec(final VersionSpec versionSpec)
-    {
+    public void setVersionSpec(final VersionSpec versionSpec) {
         Check.notNull(versionSpec, "versionSpec"); //$NON-NLS-1$
 
         this.versionSpec = versionSpec;
     }
 
-    public VersionSpec getVersionSpec()
-    {
+    public VersionSpec getVersionSpec() {
         return versionSpec;
     }
 
-    public void setDepth(final int depth)
-    {
+    public void setDepth(final int depth) {
         Check.isTrue(depth >= 1, "depth >= 1"); //$NON-NLS-1$
 
         this.depth = depth;
     }
 
-    public int getDepth()
-    {
+    public int getDepth() {
         return depth;
     }
 
-    public boolean getTag()
-    {
+    public boolean getTag() {
         return tag;
     }
 
-    public void setTag(final boolean tag)
-    {
+    public void setTag(final boolean tag) {
         this.tag = tag;
     }
 
     @Override
     public TaskStatus run(final TaskProgressMonitor progressMonitor)
-        throws Exception
-    {
+            throws Exception {
         final String taskName = Messages.formatString("CloneTask.CloningFormat", //$NON-NLS-1$
-            tfsPath,
-            bare ? repository.getDirectory().getAbsolutePath() : repository.getWorkTree().getAbsolutePath());
+                tfsPath,
+                bare ? repository.getDirectory().getAbsolutePath() : repository.getWorkTree().getAbsolutePath());
 
         progressMonitor.beginTask(
-            taskName,
-            1,
-            TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
+                taskName,
+                1,
+                TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
 
         /*
          * Query the changesets.
@@ -168,26 +156,25 @@ public class CloneTask
         final Item item = vcClient.getItem(tfsPath, versionSpec, DeletedState.NON_DELETED, GetItemsOptions.NONE);
         Check.notNull(item, "item"); //$NON-NLS-1$
 
-        if (item.getItemType() != ItemType.FOLDER)
-        {
+        if (item.getItemType() != ItemType.FOLDER) {
             return new TaskStatus(TaskStatus.ERROR, Messages.formatString("CloneTask.CannotCloneFileFormat", tfsPath)); //$NON-NLS-1$
         }
 
         /* Determine the latest changeset on the server. */
         final Changeset[] changesets =
-            vcClient.queryHistory(
-                tfsPath,
-                versionSpec,
-                0,
-                RecursionType.FULL,
-                null,
-                new ChangesetVersionSpec(0),
-                versionSpec,
-                depth,
-                false,
-                false,
-                false,
-                false);
+                vcClient.queryHistory(
+                        tfsPath,
+                        versionSpec,
+                        0,
+                        RecursionType.FULL,
+                        null,
+                        new ChangesetVersionSpec(0),
+                        versionSpec,
+                        depth,
+                        false,
+                        false,
+                        false,
+                        false);
 
         /*
          * Create and configure the repository.
@@ -200,13 +187,11 @@ public class CloneTask
 
         final TaskStatus configureStatus = new TaskExecutor(new NullTaskProgressMonitor()).execute(configureTask);
 
-        if (!configureStatus.isOK())
-        {
+        if (!configureStatus.isOK()) {
             return configureStatus;
         }
 
-        if (changesets.length > 0)
-        {
+        if (changesets.length > 0) {
             ObjectId lastCommitID = null;
             ObjectId lastTreeID = null;
             Item[] previousChangesetItems = null;
@@ -218,21 +203,19 @@ public class CloneTask
 
             progressMonitor.setWork(numberOfChangesetToDownload);
 
-            for (int i = numberOfChangesetToDownload; i > 0; i--)
-            {
+            for (int i = numberOfChangesetToDownload; i > 0; i--) {
                 CreateCommitForChangesetVersionSpecTask commitTask =
-                    new CreateCommitForChangesetVersionSpecTask(
-                        repository,
-                        vcClient,
-                        changesets[i - 1],
-                        previousChangesetItems,
-                        lastCommitID,
-                        witClient);
+                        new CreateCommitForChangesetVersionSpecTask(
+                                repository,
+                                vcClient,
+                                changesets[i - 1],
+                                previousChangesetItems,
+                                lastCommitID,
+                                witClient);
 
                 TaskStatus commitStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(commitTask);
 
-                if (!commitStatus.isOK())
-                {
+                if (!commitStatus.isOK()) {
                     return commitStatus;
                 }
 
@@ -244,12 +227,12 @@ public class CloneTask
                 Check.notNull(lastTreeID, "lastTreeID"); //$NON-NLS-1$
 
                 new ChangesetCommitMap(repository).setChangesetCommit(
-                    changesets[i - 1].getChangesetID(),
-                    commitTask.getCommitID());
+                        changesets[i - 1].getChangesetID(),
+                        commitTask.getCommitID());
 
                 progressMonitor.displayVerbose(Messages.formatString("CloneTask.ClonedFormat", //$NON-NLS-1$
-                    Integer.toString(changesets[i - 1].getChangesetID()),
-                    ObjectIdUtil.abbreviate(repository, lastCommitID)));
+                        Integer.toString(changesets[i - 1].getChangesetID()),
+                        ObjectIdUtil.abbreviate(repository, lastCommitID)));
             }
 
             progressMonitor.setDetail(Messages.getString("CloneTask.Finalizing")); //$NON-NLS-1$
@@ -265,8 +248,7 @@ public class CloneTask
             /*
              * Check out the cloned commit.
              */
-            if (!bare)
-            {
+            if (!bare) {
                 DirCache dirCache = repository.lockDirCache();
                 DirCacheCheckout checkout = new DirCacheCheckout(repository, dirCache, lastTreeID);
                 checkout.checkout();
@@ -279,28 +261,23 @@ public class CloneTask
 
             final int finalChangesetID = changesets[0].getChangesetID();
 
-            if (numberOfChangesetToDownload == 1)
-            {
+            if (numberOfChangesetToDownload == 1) {
                 progressMonitor.displayMessage(Messages.formatString("CloneTask.ClonedFormat", //$NON-NLS-1$
-                    Integer.toString(finalChangesetID),
-                    ObjectIdUtil.abbreviate(repository, lastCommitID)));
-            }
-            else
-            {
+                        Integer.toString(finalChangesetID),
+                        ObjectIdUtil.abbreviate(repository, lastCommitID)));
+            } else {
                 progressMonitor.displayMessage(Messages.formatString("CloneTask.ClonedMultipleFormat", //$NON-NLS-1$
-                    changesets.length,
-                    Integer.toString(finalChangesetID),
-                    ObjectIdUtil.abbreviate(repository, lastCommitID)));
+                        changesets.length,
+                        Integer.toString(finalChangesetID),
+                        ObjectIdUtil.abbreviate(repository, lastCommitID)));
             }
-        }
-        else
-        {
+        } else {
             // the folder exists on the server but is empty
 
             progressMonitor.displayMessage(Messages.getString("CloneTask.NothingToDownload")); //$NON-NLS-1$
 
             progressMonitor.displayMessage(Messages.formatString("CloneTask.ClonedFolderEmptyFormat", //$NON-NLS-1$
-                tfsPath));
+                    tfsPath));
         }
 
         log.info("Clone task completed."); //$NON-NLS-1$

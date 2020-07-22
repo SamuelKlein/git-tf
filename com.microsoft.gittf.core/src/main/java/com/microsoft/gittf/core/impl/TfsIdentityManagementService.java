@@ -9,24 +9,20 @@ import com.microsoft.tfs.core.clients.webservices.ReadIdentityOptions;
 import com.microsoft.tfs.core.clients.webservices.TeamFoundationIdentity;
 
 public class TfsIdentityManagementService
-    implements IdentityManagementService
-{
+        implements IdentityManagementService {
     final IIdentityManagementService IMS;
 
-    public TfsIdentityManagementService(final TFSConnection connection)
-    {
+    public TfsIdentityManagementService(final TFSConnection connection) {
         this.IMS = (IIdentityManagementService) connection.getClient(IIdentityManagementService.class);
     }
 
     public TeamFoundationIdentity[][] readIdentities(
-        final IdentitySearchFactor searchFactor,
-        final String[] factorValues)
-    {
+            final IdentitySearchFactor searchFactor,
+            final String[] factorValues) {
         return IMS.readIdentities(searchFactor, factorValues, MembershipQuery.NONE, ReadIdentityOptions.NONE);
     }
 
-    public TeamFoundationIdentity readIdentity(final IdentitySearchFactor searchFactor, final String factorValue)
-    {
+    public TeamFoundationIdentity readIdentity(final IdentitySearchFactor searchFactor, final String factorValue) {
         return IMS.readIdentity(searchFactor, factorValue, MembershipQuery.NONE, ReadIdentityOptions.NONE);
     }
 }

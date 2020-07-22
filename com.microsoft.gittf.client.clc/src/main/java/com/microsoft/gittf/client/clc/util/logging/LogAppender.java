@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -45,28 +45,22 @@ import com.microsoft.tfs.util.locking.AdvisoryFileLock;
  * the process working directory as is the default with FileAppender. 2) Each
  * LogAppender will use a separate log file (old log files are pruned after a
  * certain threshold is met)
- * 
  */
 public class LogAppender
-    extends FileAppender
-{
+        extends FileAppender {
     private static final int CLEANUP_THRESHOLD = 5;
 
     private static final Map<String, File> logTypesToInUseLogFiles = new HashMap<String, File>();
 
     @Override
-    public void setFile(final String logType)
-    {
+    public void setFile(final String logType) {
         /*
          * Create the logs directory if it doesn't already exist
          */
         VersionedVendorFilesystemPersistenceStore logStore = getLogLocation();
-        try
-        {
+        try {
             logStore.initialize();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             /*
              * Would be nice to log this, but we don't have logs yet. :) Print
              * the error and continue on; logging may actually succeed.
@@ -95,23 +89,18 @@ public class LogAppender
     /**
      * Creates a File object appropriate for use for a log file of the given
      * type.
-     * 
-     * @param logType
-     *        the log type
-     * @param location
-     *        the location of the log file
-     * @param setInUse
-     *        true to call setInUseLogFileForLogType with the log file
+     *
+     * @param logType  the log type
+     * @param location the location of the log file
+     * @param setInUse true to call setInUseLogFileForLogType with the log file
      * @return a file object representing the log file
      */
-    private static File createLogFileObject(final String logType, final File location, final boolean setInUse)
-    {
+    private static File createLogFileObject(final String logType, final File location, final boolean setInUse) {
         LogFileName logFileName = new LogFileName(logType);
 
         File logFile = logFileName.createFileDescriptor(location);
 
-        if (setInUse)
-        {
+        if (setInUse) {
             setInUseLogFileForLogType(logType, logFile);
         }
 
@@ -121,16 +110,12 @@ public class LogAppender
     /**
      * Marks the specified file as being the currently in-use log file for the
      * given log type.
-     * 
-     * @param logType
-     *        the log type
-     * @param logFile
-     *        the in-use log file
+     *
+     * @param logType the log type
+     * @param logFile the in-use log file
      */
-    static void setInUseLogFileForLogType(final String logType, final File logFile)
-    {
-        synchronized (logTypesToInUseLogFiles)
-        {
+    static void setInUseLogFileForLogType(final String logType, final File logFile) {
+        synchronized (logTypesToInUseLogFiles) {
             logTypesToInUseLogFiles.put(logType, logFile);
         }
     }
@@ -139,16 +124,14 @@ public class LogAppender
      * Obtains the {@link PersistenceStore} where all Team Explorer log files
      * should be stored. This {@link PersistenceStore} object is cached
      * internally.
-     * 
+     *
      * @return the {@link PersistenceStore} described above
      */
-    private static VersionedVendorFilesystemPersistenceStore getLogLocation()
-    {
+    private static VersionedVendorFilesystemPersistenceStore getLogLocation() {
         return (VersionedVendorFilesystemPersistenceStore) DefaultPersistenceStoreProvider.INSTANCE.getLogPersistenceStore();
     }
 
-    private void cleanup(final String logType, final FilesystemPersistenceStore logStore)
-    {
+    private void cleanup(final String logType, final FilesystemPersistenceStore logStore) {
         /*
          * The basic algorithm here is to get an exclusive lock on the settings
          * location. If that exclusive lock can't be had, we return without
@@ -158,15 +141,13 @@ public class LogAppender
 
         AdvisoryFileLock lock = null;
 
-        try
-        {
+        try {
             lock = logStore.getStoreLock(false);
 
             /*
              * A null lock means the lock was not immediately available.
              */
-            if (lock == null)
-            {
+            if (lock == null) {
                 return;
             }
 
@@ -175,50 +156,38 @@ public class LogAppender
              * At this point we know we have the exclusive lock.
              */
             doCleanup(logType, logStore);
-        }
-        catch (InterruptedException e)
-        {
+        } catch (InterruptedException e) {
             /*
              * Shouldn't ever happen because we aren't blocking on getting the
              * lock.
              */
             return;
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             /*
              * Exception trying to get lock - return without doing cleanup
              */
             return;
-        }
-        finally
-        {
-            try
-            {
+        } finally {
+            try {
                 /*
                  * Always release the lock
                  */
-                if (lock != null)
-                {
+                if (lock != null) {
                     lock.release();
                 }
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
             }
         }
     }
 
-    private void doCleanup(final String logType, final FilesystemPersistenceStore logFileLocation)
-    {
+    private void doCleanup(final String logType, final FilesystemPersistenceStore logFileLocation) {
         File[] logFiles = getAllLogFilesForLogType(logType, logFileLocation.getStoreFile(), true);
 
         /*
          * If the number of files is not under the cleanup threshold, this
          * method has nothing to do
          */
-        if (logFiles.length < CLEANUP_THRESHOLD)
-        {
+        if (logFiles.length < CLEANUP_THRESHOLD) {
             return;
         }
 
@@ -229,10 +198,8 @@ public class LogAppender
          */
         int numToDelete = logFiles.length - CLEANUP_THRESHOLD + 1;
         int numDeleted = 0;
-        for (int i = 0; i < logFiles.length && numDeleted < numToDelete; i++)
-        {
-            if (logFiles[i].delete())
-            {
+        for (int i = 0; i < logFiles.length && numDeleted < numToDelete; i++) {
+            if (logFiles[i].delete()) {
                 ++numDeleted;
             }
         }
@@ -243,21 +210,17 @@ public class LogAppender
      * a given directory. The result array is sorted by the last modified date
      * of the files. If the sortAscending option is true, earlier last modified
      * dates come first.
-     * 
-     * @param logType
-     *        the log type
-     * @param location
-     *        the directory
-     * @param sortAscending
-     *        true to sort last modified dates in ascending order
+     *
+     * @param logType       the log type
+     * @param location      the directory
+     * @param sortAscending true to sort last modified dates in ascending order
      * @return matched Files
      */
     @SuppressWarnings("unchecked")
     private static File[] getAllLogFilesForLogType(
-        final String logType,
-        final File location,
-        final boolean sortAscending)
-    {
+            final String logType,
+            final File location,
+            final boolean sortAscending) {
         File[] files = location.listFiles(LogFileName.getFilterForLogFilesOfTypeForCurrentApplication(logType));
 
         FileLastModifiedComparator c = new FileLastModifiedComparator();

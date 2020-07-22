@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -34,29 +34,25 @@ import com.microsoft.tfs.core.credentials.CredentialsManager;
 import com.microsoft.tfs.core.credentials.CredentialsManagerFactory;
 
 public class GitTFConnectionAdvisor
-    extends DefaultConnectionAdvisor
-{
+        extends DefaultConnectionAdvisor {
     /**
      * Creates a {@link GitTFConnectionAdvisor} that uses the current default
      * {@link Locale} and {@link TimeZone} for all
      * {@link ConnectionInstanceData}s.
-     * 
      */
-    public GitTFConnectionAdvisor()
-    {
+    public GitTFConnectionAdvisor() {
         super(Locale.getDefault(), TimeZone.getDefault());
     }
 
     @Override
-    public HTTPClientFactory getHTTPClientFactory(final ConnectionInstanceData instanceData)
-    {
+    public HTTPClientFactory getHTTPClientFactory(final ConnectionInstanceData instanceData) {
         /*
          * The Git-TF client factory uses environment variables to configure the
          * global proxy URL, and we can reuse the Team Explorer Everywhere
          * credentials manager.
          */
         final CredentialsManager credentialsManager =
-            CredentialsManagerFactory.getCredentialsManager(getPersistenceStoreProvider(instanceData));
+                CredentialsManagerFactory.getCredentialsManager(getPersistenceStoreProvider(instanceData));
 
         return new GitTFHTTPClientFactory(instanceData, credentialsManager);
     }

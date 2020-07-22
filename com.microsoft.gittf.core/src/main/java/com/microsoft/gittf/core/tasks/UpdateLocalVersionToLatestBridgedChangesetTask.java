@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -40,26 +40,24 @@ import com.microsoft.tfs.core.clients.versioncontrol.specs.version.ChangesetVers
 /**
  * Updates the local version information for a workspace to the latest bridged
  * changeset on the server
- * 
+ * <p>
  * This task basically fakes the server into believing that we have the
  * specified version of the file, without having to download all the files from
  * the server
  */
 public class UpdateLocalVersionToLatestBridgedChangesetTask
-    extends UpdateLocalVersionTask
-{
+        extends UpdateLocalVersionTask {
     private final Repository repository;
 
     private GetOperation[][] tfsGetOperations;
 
     /**
      * Constructor
-     * 
+     *
      * @param workspace
      * @param repository
      */
-    public UpdateLocalVersionToLatestBridgedChangesetTask(final Workspace workspace, final Repository repository)
-    {
+    public UpdateLocalVersionToLatestBridgedChangesetTask(final Workspace workspace, final Repository repository) {
         super(workspace);
 
         Check.notNull(repository, "repository"); //$NON-NLS-1$
@@ -67,18 +65,15 @@ public class UpdateLocalVersionToLatestBridgedChangesetTask
         this.repository = repository;
     }
 
-    public GetOperation[][] getGetOperations()
-    {
-        if (tfsGetOperations == null)
-        {
+    public GetOperation[][] getGetOperations() {
+        if (tfsGetOperations == null) {
             tfsGetOperations = getLatestDownloadedChangesetGetOps();
         }
 
         return tfsGetOperations;
     }
 
-    private GetOperation[][] getLatestDownloadedChangesetGetOps()
-    {
+    private GetOperation[][] getLatestDownloadedChangesetGetOps() {
         GitTFConfiguration configuration = GitTFConfiguration.loadFrom(repository);
         ChangesetCommitMap commitMap = new ChangesetCommitMap(repository);
         int lastDownloadedChangeset = commitMap.getLastBridgedChangesetID(true);
@@ -87,26 +82,25 @@ public class UpdateLocalVersionToLatestBridgedChangesetTask
          * If this is a repo that was just configured and never checked in there
          * will be nothing to update here
          */
-        if (lastDownloadedChangeset < 0)
-        {
+        if (lastDownloadedChangeset < 0) {
             return null;
         }
 
         GetOperation[][] tfsGetOperations =
-            workspace.getClient().getWebServiceLayer().get(
-                workspace.getName(),
-                workspace.getOwnerName(),
-                new GetRequest[]
-                {
-                    new GetRequest(
-                        new ItemSpec(configuration.getServerPath(), RecursionType.FULL),
-                        new ChangesetVersionSpec(lastDownloadedChangeset))
-                },
-                0,
-                GetOptions.NO_DISK_UPDATE.combine(GetOptions.GET_ALL),
-                null,
-                null,
-                false);
+                workspace.getClient().getWebServiceLayer().get(
+                        workspace.getName(),
+                        workspace.getOwnerName(),
+                        new GetRequest[]
+                                {
+                                        new GetRequest(
+                                                new ItemSpec(configuration.getServerPath(), RecursionType.FULL),
+                                                new ChangesetVersionSpec(lastDownloadedChangeset))
+                                },
+                        0,
+                        GetOptions.NO_DISK_UPDATE.combine(GetOptions.GET_ALL),
+                        null,
+                        null,
+                        false);
 
         return tfsGetOperations;
     }

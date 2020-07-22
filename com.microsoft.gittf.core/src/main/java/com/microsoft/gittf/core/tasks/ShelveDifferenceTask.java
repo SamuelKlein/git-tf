@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -58,11 +58,9 @@ import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 /**
  * Pends the difference between the Commit Id specified and the latest bridged
  * commit to TFS, then shelves the differences in a shelveset on the TFS server.
- * 
  */
 public class ShelveDifferenceTask
-    extends WorkspaceTask
-{
+        extends WorkspaceTask {
     private static final Log log = LogFactory.getLog(ShelveDifferenceTask.class);
 
     private final ObjectId shelveCommitID;
@@ -77,22 +75,17 @@ public class ShelveDifferenceTask
 
     /**
      * Constructor
-     * 
-     * @param repository
-     *        the git repository
-     * @param shelveCommitID
-     *        the commit id to shelve
-     * @param versionControlClient
-     *        the version control client object
-     * @param shelvesetName
-     *        the shelveset name
+     *
+     * @param repository           the git repository
+     * @param shelveCommitID       the commit id to shelve
+     * @param versionControlClient the version control client object
+     * @param shelvesetName        the shelveset name
      */
     public ShelveDifferenceTask(
-        final Repository repository,
-        final ObjectId shelveCommitID,
-        final VersionControlClient versionControlClient,
-        final String shelvesetName)
-    {
+            final Repository repository,
+            final ObjectId shelveCommitID,
+            final VersionControlClient versionControlClient,
+            final String shelvesetName) {
         super(repository, versionControlClient, GitTFConfiguration.loadFrom(repository).getServerPath());
 
         Check.notNull(shelveCommitID, "shelveCommitID"); //$NON-NLS-1$
@@ -104,57 +97,51 @@ public class ShelveDifferenceTask
 
     /**
      * Sets the work item info for the work items to associate
-     * 
+     *
      * @param workItems
      */
-    public void setWorkItemCheckinInfo(WorkItemCheckinInfo[] workItems)
-    {
+    public void setWorkItemCheckinInfo(WorkItemCheckinInfo[] workItems) {
         this.workItems = workItems;
     }
 
     /**
      * Sets the flag that indicates the ability to replace an existing shelveset
      * with the same name on the server
-     * 
+     *
      * @param replace
      */
-    public void setReplaceExistingShelveset(boolean replace)
-    {
+    public void setReplaceExistingShelveset(boolean replace) {
         this.replace = replace;
     }
 
     /**
      * Sets the rename mode to use when shelving the changes
-     * 
+     *
      * @param renameMode
      */
-    public void setRenameMode(RenameMode renameMode)
-    {
+    public void setRenameMode(RenameMode renameMode) {
         this.renameMode = renameMode;
     }
 
     /**
      * Sets the shelveset comment
-     * 
+     *
      * @param message
      */
-    public void setMessage(String message)
-    {
+    public void setMessage(String message) {
         this.message = message;
     }
 
     @Override
-    public TaskStatus run(final TaskProgressMonitor progressMonitor)
-    {
+    public TaskStatus run(final TaskProgressMonitor progressMonitor) {
         progressMonitor.beginTask(
-            Messages.formatString(
-                "ShelveDifferenceTask.ShelvingDifferencesFormat", GitTFConfiguration.loadFrom(repository).getServerPath()), 1, //$NON-NLS-1$ 
-            TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
+                Messages.formatString(
+                        "ShelveDifferenceTask.ShelvingDifferencesFormat", GitTFConfiguration.loadFrom(repository).getServerPath()), 1, //$NON-NLS-1$
+                TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
 
         WorkspaceInfo workspaceData = null;
 
-        try
-        {
+        try {
             progressMonitor.setDetail(Messages.getString("ShelveDifferenceTask.ExaminingRepository")); //$NON-NLS-1$
 
             /*
@@ -177,13 +164,12 @@ public class ShelveDifferenceTask
 
             /* Pend the changes in the workspace */
             final PendDifferenceTask pendTask =
-                new PendDifferenceTask(repository, fromCommit, toCommit, workspace, serverPath, workingFolder);
+                    new PendDifferenceTask(repository, fromCommit, toCommit, workspace, serverPath, workingFolder);
             pendTask.setRenameMode(renameMode);
 
             final TaskStatus pendStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(pendTask);
 
-            if (!pendStatus.isOK())
-            {
+            if (!pendStatus.isOK()) {
                 return pendStatus;
             }
 
@@ -194,19 +180,18 @@ public class ShelveDifferenceTask
              * to shelve.
              */
             PendingChange[] changes = pendTask.getPendingChanges();
-            if (changes == null || changes.length == 0)
-            {
+            if (changes == null || changes.length == 0) {
                 throw new Exception(Messages.getString("ShelveDifferenceTask.NoChangesToShelve")); //$NON-NLS-1$
             }
 
             /* Shelve the pended changes */
             final ShelvePendingChangesTask shelveTask =
-                new ShelvePendingChangesTask(
-                    repository,
-                    message == null ? toCommit.getFullMessage() : message,
-                    workspace,
-                    changes,
-                    shelvesetName);
+                    new ShelvePendingChangesTask(
+                            repository,
+                            message == null ? toCommit.getFullMessage() : message,
+                            workspace,
+                            changes,
+                            shelvesetName);
 
             shelveTask.setReplaceExistingShelveset(replace);
             shelveTask.setWorkItemCheckinInfo(workItems);
@@ -217,8 +202,7 @@ public class ShelveDifferenceTask
 
             progressMonitor.setDetail(null);
 
-            if (!shelveStatus.isOK())
-            {
+            if (!shelveStatus.isOK()) {
                 return shelveStatus;
             }
 
@@ -228,79 +212,59 @@ public class ShelveDifferenceTask
 
             progressMonitor.endTask();
 
-            if (RepositoryUtil.hasUncommittedChanges(repository))
-            {
+            if (RepositoryUtil.hasUncommittedChanges(repository)) {
                 progressMonitor.displayWarning(Messages.getString("ShelveDifferenceTask.UnCommittedChangesDetected")); //$NON-NLS-1$
             }
 
             return TaskStatus.OK_STATUS;
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             log.error("Task exited with the following error", e); //$NON-NLS-1$
 
             return new TaskStatus(TaskStatus.ERROR, e);
-        }
-        finally
-        {
-            if (workspaceData != null)
-            {
+        } finally {
+            if (workspaceData != null) {
                 disposeWorkspace(new NullTaskProgressMonitor());
             }
         }
     }
 
     private CommitDelta getOptimalCommitDelta()
-        throws Exception
-    {
+            throws Exception {
         final ChangesetCommitMap commitMap = new ChangesetCommitMap(repository);
         final int shelvesetChangesetId = commitMap.getChangesetID(shelveCommitID);
 
-        if (shelvesetChangesetId > 0)
-        {
+        if (shelvesetChangesetId > 0) {
             // this already maps to an existing changeset;
             throw new Exception(Messages.formatString("ShelveDifferenceTask.NoChangesToShelveFormat", //$NON-NLS-1$
-                Integer.toString(shelvesetChangesetId)));
+                    Integer.toString(shelvesetChangesetId)));
         }
 
         List<CommitDelta> commitDeltas = null;
 
         int currentChangesetId = commitMap.getLastBridgedChangesetID(true);
-        while (currentChangesetId > 0)
-        {
+        while (currentChangesetId > 0) {
             ObjectId changesetCommitId = commitMap.getCommitID(currentChangesetId, true);
 
-            try
-            {
+            try {
                 commitDeltas = CommitWalker.getAutoSquashedCommitList(repository, changesetCommitId, shelveCommitID);
-            }
-            catch (Exception exception)
-            {
+            } catch (Exception exception) {
                 // eat exception here we do not care if the path does not exist
             }
 
-            if (commitDeltas == null)
-            {
+            if (commitDeltas == null) {
                 currentChangesetId = commitMap.getPreviousBridgedChangeset(currentChangesetId, true);
-            }
-            else
-            {
+            } else {
                 break;
             }
         }
 
-        if (commitDeltas == null)
-        {
+        if (commitDeltas == null) {
             RevWalk walker = new RevWalk(repository);
-            try
-            {
+            try {
                 RevCommit toCommit = walker.parseCommit(shelveCommitID);
                 return new CommitDelta(null, toCommit);
-            }
-            finally
-            {
-                if (walker != null)
-                {
+            } finally {
+                if (walker != null) {
                     walker.release();
                 }
             }

@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -37,12 +37,10 @@ import com.microsoft.gittf.client.tfs.TestEnvironmentConstants;
 
 /**
  * Base class for the command line applications
- * 
+ *
  * @author jpresto
- * 
  */
-public abstract class CommandBase
-{
+public abstract class CommandBase {
     // members
     private String standardOutput = null;
     private String stardardError = null;
@@ -50,8 +48,7 @@ public abstract class CommandBase
     private int exitValue = -101;
     private final ProcessBuilder processBuilder;
 
-    public CommandBase()
-    {
+    public CommandBase() {
         // create process builder (we need to create this here so that the
         // caller can add environment settings before kicking off the actual
         // process
@@ -72,7 +69,7 @@ public abstract class CommandBase
      * Run the command; typically
      */
     public abstract int runCommand()
-        throws IOException,
+            throws IOException,
             InterruptedException;
 
     /**
@@ -93,33 +90,30 @@ public abstract class CommandBase
     /**
      * Add custom environment variable settings.
      */
-    public void addEnvironmentVariable(final String key, final String value)
-    {
+    public void addEnvironmentVariable(final String key, final String value) {
         processBuilder.environment().put(key, value);
     }
 
     /**
      * Add the environment variable path.
      */
-    public void addEnvironmentPath(String newFolderPath)
-    {
+    public void addEnvironmentPath(String newFolderPath) {
         String currentPath = (String) processBuilder.environment().get(TestEnvironmentConstants.PATH);
 
         processBuilder.environment().put(
-            TestEnvironmentConstants.PATH,
-            MessageFormat.format("{0}{1}{2}", newFolderPath, System.getProperty("path.separator"), currentPath)); //$NON-NLS-1$ //$NON-NLS-2$
+                TestEnvironmentConstants.PATH,
+                MessageFormat.format("{0}{1}{2}", newFolderPath, System.getProperty("path.separator"), currentPath)); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     /**
      * Run the program.
      */
     public int run()
-        throws IOException,
-            InterruptedException
-    {
+            throws IOException,
+            InterruptedException {
         processBuilder.environment().put(
-            TestEnvironmentConstants.VARIABLEJAVAHOME,
-            TestEnvironment.getTestVariableValue(TestEnvironmentConstants.VARIABLEJAVAHOME));
+                TestEnvironmentConstants.VARIABLEJAVAHOME,
+                TestEnvironment.getTestVariableValue(TestEnvironmentConstants.VARIABLEJAVAHOME));
 
         commandInput = MessageFormat.format("{0} {1}", getExeFullPath(), getProcessArgs()); //$NON-NLS-1$
 
@@ -128,16 +122,14 @@ public abstract class CommandBase
         List<String> list = new ArrayList<String>();
         list.add(getExeFullPath());
         String[] splitArgs = getProcessArgs().split(" "); //$NON-NLS-1$
-        for (int i = 0; i < splitArgs.length; i++)
-        {
+        for (int i = 0; i < splitArgs.length; i++) {
             list.add(splitArgs[i]);
         }
 
         processBuilder.command(list);
         processBuilder.directory(new File(getWorkingFolder()));
 
-        try
-        {
+        try {
             Logger.log(MessageFormat.format("Starting: {0} {1}", getExeFullPath(), getProcessArgs())); //$NON-NLS-1$
 
             // kick off the command
@@ -148,28 +140,22 @@ public abstract class CommandBase
             String line;
             standardOutput = ""; //$NON-NLS-1$
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            while ((line = bufferedReader.readLine()) != null)
-            {
+            while ((line = bufferedReader.readLine()) != null) {
                 standardOutput = standardOutput + line + System.getProperty("line.separator"); //$NON-NLS-1$
             }
 
             // get the error
             stardardError = ""; //$NON-NLS-1$
             bufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            while ((line = bufferedReader.readLine()) != null)
-            {
+            while ((line = bufferedReader.readLine()) != null) {
                 stardardError = stardardError + line + System.getProperty("line.separator"); //$NON-NLS-1$
             }
 
             exitValue = process.exitValue();
-        }
-        catch (IOException e1)
-        {
+        } catch (IOException e1) {
             Logger.logException(e1);
             throw e1;
-        }
-        catch (InterruptedException e2)
-        {
+        } catch (InterruptedException e2) {
             Logger.logException(e2);
             throw e2;
         }
@@ -180,10 +166,8 @@ public abstract class CommandBase
     /**
      * Return the standard out of the application.
      */
-    public String getStandardOut()
-    {
-        if (standardOutput == null)
-        {
+    public String getStandardOut() {
+        if (standardOutput == null) {
             return ""; //$NON-NLS-1$
         }
         return standardOutput;
@@ -192,10 +176,8 @@ public abstract class CommandBase
     /**
      * Return the standard error of the application.
      */
-    public String getStandardErr()
-    {
-        if (stardardError == null)
-        {
+    public String getStandardErr() {
+        if (stardardError == null) {
             return ""; //$NON-NLS-1$
         }
         return stardardError;
@@ -204,10 +186,8 @@ public abstract class CommandBase
     /**
      * Get the command input (this is the program plus arguments).
      */
-    public String getCommandInput()
-    {
-        if (commandInput == null)
-        {
+    public String getCommandInput() {
+        if (commandInput == null) {
             return ""; //$NON-NLS-1$
         }
         return commandInput;
@@ -216,16 +196,14 @@ public abstract class CommandBase
     /**
      * Return the exit code of the application we just ran.
      */
-    public int getExitCode()
-    {
+    public int getExitCode() {
         return exitValue;
     }
 
     /**
      * Log the results of the application we just ran.
      */
-    public void logResults()
-    {
+    public void logResults() {
         Logger.log(MessageFormat.format("Working Folder: {0}", getWorkingFolder())); //$NON-NLS-1$
         Logger.log(MessageFormat.format("Command Input:  {0}", getCommandInput())); //$NON-NLS-1$
         Logger.log(MessageFormat.format("Exit:           {0}", getExitCode())); //$NON-NLS-1$
@@ -236,8 +214,7 @@ public abstract class CommandBase
     /**
      * Log details about the process and environment.
      */
-    public void logDetails()
-    {
+    public void logDetails() {
         Logger.logBreak();
         Logger.logBreak();
         Logger.log("Process Builder and Environment Information"); //$NON-NLS-1$
@@ -250,8 +227,7 @@ public abstract class CommandBase
         Logger.log(MessageFormat.format("    JAVA_HOME:   {0}", javaHome)); //$NON-NLS-1$
         Logger.log("    PATH (split):"); //$NON-NLS-1$
         String[] paths = path.split(";"); //$NON-NLS-1$
-        for (int i = 0; i < paths.length; i++)
-        {
+        for (int i = 0; i < paths.length; i++) {
             Logger.log(MessageFormat.format("        {0}", paths[i])); //$NON-NLS-1$
         }
         Logger.logBreak();

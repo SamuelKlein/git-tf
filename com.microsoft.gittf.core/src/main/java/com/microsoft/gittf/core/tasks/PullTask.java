@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -58,8 +58,7 @@ import com.microsoft.tfs.core.clients.versioncontrol.specs.version.VersionSpec;
 import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
 
 public class PullTask
-    extends Task
-{
+        extends Task {
     private static final Log log = LogFactory.getLog(FetchTask.class);
 
     private final Repository repository;
@@ -76,16 +75,14 @@ public class PullTask
     private MergeCommand mergeCommand;
     private RebaseCommand rebaseCommand;
 
-    public PullTask(final Repository repository, final VersionControlService versionControlClient)
-    {
+    public PullTask(final Repository repository, final VersionControlService versionControlClient) {
         this(repository, versionControlClient, null);
     }
 
     public PullTask(
-        final Repository repository,
-        final VersionControlService versionControlClient,
-        WorkItemClient witClient)
-    {
+            final Repository repository,
+            final VersionControlService versionControlClient,
+            WorkItemClient witClient) {
         Check.notNull(repository, "repository"); //$NON-NLS-1$
         Check.notNull(versionControlClient, "versionControlClient"); //$NON-NLS-1$
 
@@ -94,50 +91,40 @@ public class PullTask
         this.witClient = witClient;
     }
 
-    public void setVersionSpec(VersionSpec versionSpecToFetch)
-    {
+    public void setVersionSpec(VersionSpec versionSpecToFetch) {
         versionSpec = versionSpecToFetch;
     }
 
-    public void setDeep(final boolean deep)
-    {
+    public void setDeep(final boolean deep) {
         this.deep = deep;
     }
 
-    public void setRebase(final boolean rebase)
-    {
+    public void setRebase(final boolean rebase) {
         this.rebase = rebase;
     }
 
-    public void setStrategy(MergeStrategy mergeStrategy)
-    {
+    public void setStrategy(MergeStrategy mergeStrategy) {
         getMergeCommand().setStrategy(mergeStrategy);
     }
 
-    public void setForce(final boolean force)
-    {
+    public void setForce(final boolean force) {
         this.force = force;
     }
 
-    public ObjectId getCommitId()
-    {
+    public ObjectId getCommitId() {
         return fetchedCommitId;
     }
 
-    private MergeCommand getMergeCommand()
-    {
-        if (mergeCommand == null)
-        {
+    private MergeCommand getMergeCommand() {
+        if (mergeCommand == null) {
             mergeCommand = new Git(repository).merge();
         }
 
         return mergeCommand;
     }
 
-    private RebaseCommand getRebaseCommand()
-    {
-        if (rebaseCommand == null)
-        {
+    private RebaseCommand getRebaseCommand() {
+        if (rebaseCommand == null) {
             rebaseCommand = new Git(repository).rebase();
         }
 
@@ -145,12 +132,11 @@ public class PullTask
     }
 
     @Override
-    public TaskStatus run(final TaskProgressMonitor progressMonitor)
-    {
+    public TaskStatus run(final TaskProgressMonitor progressMonitor) {
         progressMonitor.beginTask(
-            Messages.formatString(
-                "PullTask.FetchingVersionFormat", GitTFConfiguration.loadFrom(repository).getServerPath(), VersionSpecUtil.getDescription(versionSpec)), 1, //$NON-NLS-1$
-            TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
+                Messages.formatString(
+                        "PullTask.FetchingVersionFormat", GitTFConfiguration.loadFrom(repository).getServerPath(), VersionSpecUtil.getDescription(versionSpec)), 1, //$NON-NLS-1$
+                TaskProgressDisplay.DISPLAY_PROGRESS.combine(TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL));
 
         final FetchTask fetchTask = new FetchTask(repository, versionControlClient, witClient);
         fetchTask.setVersionSpec(versionSpec);
@@ -160,36 +146,29 @@ public class PullTask
 
         final TaskStatus fetchStatus = new TaskExecutor(progressMonitor.newSubTask(1)).execute(fetchTask);
 
-        if (!fetchStatus.isOK())
-        {
+        if (!fetchStatus.isOK()) {
             return fetchStatus;
         }
 
         fetchedCommitId = fetchTask.getCommitId();
 
-        if (rebase)
-        {
+        if (rebase) {
             return rebase(progressMonitor, fetchTask.getCommitId());
-        }
-        else
-        {
+        } else {
             return merge(progressMonitor, fetchTask.getLatestChangeSetId(), fetchTask.getCommitId());
         }
     }
 
-    private TaskStatus merge(TaskProgressMonitor progressMonitor, int changeset, ObjectId commitId)
-    {
-        try
-        {
+    private TaskStatus merge(TaskProgressMonitor progressMonitor, int changeset, ObjectId commitId) {
+        try {
             getMergeCommand().include(
-                Messages.formatString("PullTask.Merge.CommitNameFormat", Integer.toString(changeset)), commitId); //$NON-NLS-1$
+                    Messages.formatString("PullTask.Merge.CommitNameFormat", Integer.toString(changeset)), commitId); //$NON-NLS-1$
 
             MergeResult mergeResults = getMergeCommand().call();
 
             progressMonitor.endTask();
 
-            switch (mergeResults.getMergeStatus())
-            {
+            switch (mergeResults.getMergeStatus()) {
                 case ALREADY_UP_TO_DATE:
                     progressMonitor.displayMessage(Messages.getString("PullTask.Merge.AlreadyUpToDate")); //$NON-NLS-1$
                     break;
@@ -197,27 +176,25 @@ public class PullTask
                 case FAST_FORWARD:
                 case MERGED:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Merge.MergeSuccessfulFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                            "PullTask.Merge.MergeSuccessfulFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     break;
 
                 case CONFLICTING:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Merge.MergeSuccessfulWithConflictsFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                            "PullTask.Merge.MergeSuccessfulWithConflictsFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     displayConflicts(progressMonitor, mergeResults.getConflicts());
                     break;
 
                 case FAILED:
                 case NOT_SUPPORTED:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Merge.FailedFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                            "PullTask.Merge.FailedFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     displayFailures(progressMonitor, mergeResults.getFailingPaths());
                     break;
             }
 
             RepositoryUtil.fixFileAttributes(repository);
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             log.error("An error occurred while merging.", e); //$NON-NLS-1$
 
             return new TaskStatus(TaskStatus.ERROR, e);
@@ -226,10 +203,8 @@ public class PullTask
         return TaskStatus.OK_STATUS;
     }
 
-    private TaskStatus rebase(TaskProgressMonitor progressMonitor, ObjectId commitId)
-    {
-        try
-        {
+    private TaskStatus rebase(TaskProgressMonitor progressMonitor, ObjectId commitId) {
+        try {
             getRebaseCommand().setOperation(Operation.BEGIN);
             getRebaseCommand().setUpstream(commitId);
             getRebaseCommand().setProgressMonitor(new RebaseMergeJGITProgressMonitor(progressMonitor));
@@ -240,8 +215,7 @@ public class PullTask
 
             RebaseResult.Status status = rebaseResults.getStatus();
 
-            switch (status)
-            {
+            switch (status) {
                 case UP_TO_DATE:
                     progressMonitor.displayMessage(Messages.getString("PullTask.Rebase.AlreadyUpToDate")); //$NON-NLS-1$
                     break;
@@ -249,31 +223,29 @@ public class PullTask
                 case ABORTED:
                 case FAILED:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Rebase.FailedFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                            "PullTask.Rebase.FailedFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     displayFailures(progressMonitor, rebaseResults.getFailingPaths());
                     break;
 
                 case FAST_FORWARD:
                 case OK:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Rebase.RebaseSuccessfulFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                            "PullTask.Rebase.RebaseSuccessfulFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     break;
 
                 case NOTHING_TO_COMMIT:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Rebase.NothingToCommitFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                            "PullTask.Rebase.NothingToCommitFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     break;
 
                 case STOPPED:
                     progressMonitor.displayMessage(Messages.formatString(
-                        "PullTask.Rebase.StoppedFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
+                            "PullTask.Rebase.StoppedFormat", ObjectIdUtil.abbreviate(repository, commitId))); //$NON-NLS-1$
                     break;
             }
 
             RepositoryUtil.fixFileAttributes(repository);
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             log.error("An error occurred while merging.", e); //$NON-NLS-1$
 
             return new TaskStatus(TaskStatus.ERROR, e);
@@ -282,33 +254,25 @@ public class PullTask
         return TaskStatus.OK_STATUS;
     }
 
-    private void displayConflicts(TaskProgressMonitor progressMonitor, Map<String, int[][]> conflicts)
-    {
-        if (conflicts != null)
-        {
-            for (Entry<String, int[][]> conflict : conflicts.entrySet())
-            {
+    private void displayConflicts(TaskProgressMonitor progressMonitor, Map<String, int[][]> conflicts) {
+        if (conflicts != null) {
+            for (Entry<String, int[][]> conflict : conflicts.entrySet()) {
                 progressMonitor.displayMessage(conflict.getKey());
             }
         }
     }
 
-    private void displayFailures(TaskProgressMonitor progressMonitor, Map<String, MergeFailureReason> failures)
-    {
-        if (failures != null)
-        {
-            for (Entry<String, MergeFailureReason> failure : failures.entrySet())
-            {
+    private void displayFailures(TaskProgressMonitor progressMonitor, Map<String, MergeFailureReason> failures) {
+        if (failures != null) {
+            for (Entry<String, MergeFailureReason> failure : failures.entrySet()) {
                 progressMonitor.displayMessage(Messages.formatString(
-                    "PullTask.Merge.FailedMergeEntryFormat", failure.getKey(), getFailureMessage(failure.getValue()))); //$NON-NLS-1$
+                        "PullTask.Merge.FailedMergeEntryFormat", failure.getKey(), getFailureMessage(failure.getValue()))); //$NON-NLS-1$
             }
         }
     }
 
-    private String getFailureMessage(MergeFailureReason value)
-    {
-        switch (value)
-        {
+    private String getFailureMessage(MergeFailureReason value) {
+        switch (value) {
             case COULD_NOT_DELETE:
                 return Messages.getString("PullTask.Merge.CouldNotDeleteFile"); //$NON-NLS-1$
 
@@ -323,34 +287,27 @@ public class PullTask
     }
 
     private class RebaseMergeJGITProgressMonitor
-        implements ProgressMonitor
-    {
+            implements ProgressMonitor {
         private final TaskProgressMonitor progressMonitor;
 
-        public RebaseMergeJGITProgressMonitor(TaskProgressMonitor progressMonitor)
-        {
+        public RebaseMergeJGITProgressMonitor(TaskProgressMonitor progressMonitor) {
             this.progressMonitor = progressMonitor;
         }
 
-        public void start(int totalTasks)
-        {
+        public void start(int totalTasks) {
         }
 
-        public void beginTask(String title, int totalWork)
-        {
+        public void beginTask(String title, int totalWork) {
             progressMonitor.displayMessage(Messages.formatString("Pull.RebaseMergeJGITProgressMonitorFormat", title)); //$NON-NLS-1$
         }
 
-        public void update(int completed)
-        {
+        public void update(int completed) {
         }
 
-        public void endTask()
-        {
+        public void endTask() {
         }
 
-        public boolean isCancelled()
-        {
+        public boolean isCancelled() {
             return false;
         }
     }

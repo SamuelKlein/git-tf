@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -43,23 +43,19 @@ import org.eclipse.jgit.transport.RemoteRefUpdate;
 import com.microsoft.gittf.core.GitTFConstants;
 
 /**
- * 
  * Provides utility to allow clone, fetch and checkin commands to create and
  * update a branch / remote branch to point to what tfs contains. If the repo is
  * a bare repo we create both a remote reference and a branch. If the repo is
  * non-bare we only create a remote reference
- * 
  */
-public final class TfsBranchUtil
-{
-    private TfsBranchUtil()
-    {
+public final class TfsBranchUtil {
+    private TfsBranchUtil() {
     }
 
     /**
      * Creates a remote tracking ref for tfs. If the repo is bare a regular
      * branch is created too.
-     * 
+     *
      * @param repository
      * @throws RefAlreadyExistsException
      * @throws RefNotFoundException
@@ -68,20 +64,18 @@ public final class TfsBranchUtil
      * @throws IOException
      */
     public static void create(Repository repository)
-        throws RefAlreadyExistsException,
+            throws RefAlreadyExistsException,
             RefNotFoundException,
             InvalidRefNameException,
             GitAPIException,
-            IOException
-    {
+            IOException {
         create(repository, null);
     }
 
     /**
-     * 
      * Creates a remote tracking ref for tfs. If the repo is bare a regular
      * branch is created too.
-     * 
+     *
      * @param repository
      * @param startPoint
      * @throws RefAlreadyExistsException
@@ -91,19 +85,16 @@ public final class TfsBranchUtil
      * @throws IOException
      */
     public static void create(Repository repository, String startPoint)
-        throws RefAlreadyExistsException,
+            throws RefAlreadyExistsException,
             RefNotFoundException,
             InvalidRefNameException,
             GitAPIException,
-            IOException
-    {
-        if (repository.isBare())
-        {
+            IOException {
+        if (repository.isBare()) {
             CreateBranchCommand createBranch = new Git(repository).branchCreate();
             createBranch.setName(GitTFConstants.GIT_TF_BRANCHNAME);
             createBranch.setForce(true);
-            if (startPoint != null && startPoint.length() > 0)
-            {
+            if (startPoint != null && startPoint.length() > 0) {
                 createBranch.setStartPoint(startPoint);
             }
             createBranch.call();
@@ -116,7 +107,7 @@ public final class TfsBranchUtil
     /**
      * Updates the remote tracking branch and branch to point at the commit
      * specified.
-     * 
+     *
      * @param repository
      * @param commitId
      * @throws IOException
@@ -126,17 +117,14 @@ public final class TfsBranchUtil
      * @throws GitAPIException
      */
     public static void update(Repository repository, ObjectId commitId)
-        throws IOException,
+            throws IOException,
             RefAlreadyExistsException,
             RefNotFoundException,
             InvalidRefNameException,
-            GitAPIException
-    {
-        if (repository.isBare())
-        {
+            GitAPIException {
+        if (repository.isBare()) {
             Ref tfsBranchRef = repository.getRef(Constants.R_HEADS + GitTFConstants.GIT_TF_BRANCHNAME);
-            if (tfsBranchRef == null)
-            {
+            if (tfsBranchRef == null) {
                 create(repository);
             }
 
@@ -152,33 +140,26 @@ public final class TfsBranchUtil
     }
 
     private static class TfsRemoteReferenceUpdate
-        extends RemoteRefUpdate
-    {
+            extends RemoteRefUpdate {
         private final Repository repository;
 
         public TfsRemoteReferenceUpdate(Repository repository, String referenceName)
-            throws IOException
-        {
+                throws IOException {
             super(
-                repository,
-                referenceName,
-                "", true, Constants.R_REMOTES + GitTFConstants.GIT_TF_REMOTE + GitTFConstants.GIT_TF_BRANCHNAME, null); //$NON-NLS-1$
+                    repository,
+                    referenceName,
+                    "", true, Constants.R_REMOTES + GitTFConstants.GIT_TF_REMOTE + GitTFConstants.GIT_TF_BRANCHNAME, null); //$NON-NLS-1$
 
             this.repository = repository;
         }
 
         public void update()
-            throws IOException
-        {
+                throws IOException {
             RevWalk revWalk = new RevWalk(repository);
-            try
-            {
+            try {
                 updateTrackingRef(revWalk);
-            }
-            finally
-            {
-                if (revWalk != null)
-                {
+            } finally {
+                if (revWalk != null) {
                     revWalk.release();
                 }
             }

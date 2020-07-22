@@ -1,18 +1,18 @@
 /***********************************************************************************************
  * Copyright (c) Microsoft Corporation All rights reserved.
- * 
+ *
  * MIT License:
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -76,8 +76,7 @@ import com.microsoft.tfs.core.clients.workitem.query.WorkItemCollection;
 import com.microsoft.tfs.util.FileHelpers;
 
 public class CreateCommitForChangesetVersionSpecTask
-    extends CreateCommitTask
-{
+        extends CreateCommitTask {
     private static final String NEWLINE = System.getProperty("line.separator"); //$NON-NLS-1$
     private static final String HASH = "#"; //$NON-NLS-1$
     private static final String SPACES = "          "; //$NON-NLS-1$
@@ -93,13 +92,12 @@ public class CreateCommitForChangesetVersionSpecTask
     private final Item[] previousChangesetItems;
 
     public CreateCommitForChangesetVersionSpecTask(
-        final Repository repository,
-        final VersionControlService versionControlClient,
-        final Changeset changeset,
-        final Item[] previousCommittedItems,
-        final ObjectId parentCommitID,
-        final WorkItemClient witClient)
-    {
+            final Repository repository,
+            final VersionControlService versionControlClient,
+            final Changeset changeset,
+            final Item[] previousCommittedItems,
+            final ObjectId parentCommitID,
+            final WorkItemClient witClient) {
         super(repository, versionControlClient, parentCommitID);
 
         Check.isTrue(changeset.getChangesetID() >= 0, "changesetID >= 0"); //$NON-NLS-1$
@@ -110,29 +108,25 @@ public class CreateCommitForChangesetVersionSpecTask
         this.previousChangesetItems = previousCommittedItems;
     }
 
-    public ObjectId getCommitTreeID()
-    {
+    public ObjectId getCommitTreeID() {
         return commitTreeID;
     }
 
     @Override
-    public TaskStatus run(final TaskProgressMonitor progressMonitor)
-    {
+    public TaskStatus run(final TaskProgressMonitor progressMonitor) {
         progressMonitor.beginTask(Messages.formatString("CreateCommitForChangesetVersionSpecTask.CreatingCommitFormat", //$NON-NLS-1$
-            Integer.toString(changesetID)), 1, TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL);
+                Integer.toString(changesetID)), 1, TaskProgressDisplay.DISPLAY_SUBTASK_DETAIL);
 
         ObjectInserter repositoryInserter = null;
 
-        try
-        {
+        try {
             validateTempDirectory();
 
             /* Make sure that the changeset requested exist on the server */
-            if (changeset == null)
-            {
+            if (changeset == null) {
                 throw new Exception(Messages.formatString(
-                    "CreateCommitForChangesetVersionSpecTask.ChangesetNotFoundFormat", //$NON-NLS-1$
-                    Integer.toString(changesetID)));
+                        "CreateCommitForChangesetVersionSpecTask.ChangesetNotFoundFormat", //$NON-NLS-1$
+                        Integer.toString(changesetID)));
             }
 
             /*
@@ -141,7 +135,7 @@ public class CreateCommitForChangesetVersionSpecTask
              */
 
             committedItems =
-                versionControlService.getItems(serverPath, new ChangesetVersionSpec(changesetID), RecursionType.FULL);
+                    versionControlService.getItems(serverPath, new ChangesetVersionSpec(changesetID), RecursionType.FULL);
 
             /*
              * We want to optimize the tree building process. To do so we will
@@ -153,10 +147,10 @@ public class CreateCommitForChangesetVersionSpecTask
             final ChangesetCommitMap changesetCommitMap = new ChangesetCommitMap(repository);
             final int previousChangesetId = changesetCommitMap.getPreviousBridgedChangeset(changesetID, true);
             final ObjectId previousChangesetCommitId =
-                previousChangesetId >= 0 ? changesetCommitMap.getCommitID(previousChangesetId, true) : null;
+                    previousChangesetId >= 0 ? changesetCommitMap.getCommitID(previousChangesetId, true) : null;
 
             final ChangesetCommitItemReader previousChangesetCommitReader =
-                new ChangesetCommitItemReader(previousChangesetId, previousChangesetCommitId, previousChangesetItems);
+                    new ChangesetCommitItemReader(previousChangesetId, previousChangesetCommitId, previousChangesetItems);
 
             /*
              * We want trees sorted by children first so we can simply walk them
@@ -164,7 +158,7 @@ public class CreateCommitForChangesetVersionSpecTask
              * inserting blobs.
              */
             final Map<CommitTreePath, Map<CommitTreePath, CommitTreeEntry>> treeHierarchy =
-                new TreeMap<CommitTreePath, Map<CommitTreePath, CommitTreeEntry>>(new CommitTreePathComparator());
+                    new TreeMap<CommitTreePath, Map<CommitTreePath, CommitTreeEntry>>(new CommitTreePathComparator());
 
             repositoryInserter = repository.newObjectInserter();
 
@@ -172,11 +166,9 @@ public class CreateCommitForChangesetVersionSpecTask
              * Phase one: insert files as blobs in the git repository and add
              * them to the TreeFormatter for their parent folder.
              */
-            if (committedItems != null)
-            {
+            if (committedItems != null) {
                 progressMonitor.setWork(committedItems.length);
-                for (final Item item : committedItems)
-                {
+                for (final Item item : committedItems) {
                     createBlob(repositoryInserter, treeHierarchy, previousChangesetCommitReader, item, progressMonitor);
 
                     progressMonitor.worked(1);
@@ -201,37 +193,30 @@ public class CreateCommitForChangesetVersionSpecTask
             this.commitTreeID = rootTree;
 
             return TaskStatus.OK_STATUS;
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             log.error(e);
             return new TaskStatus(TaskStatus.ERROR, e);
-        }
-        finally
-        {
-            if (repositoryInserter != null)
-            {
+        } finally {
+            if (repositoryInserter != null) {
                 repositoryInserter.release();
             }
         }
     }
 
     private void createBlob(
-        final ObjectInserter repositoryInserter,
-        final Map<CommitTreePath, Map<CommitTreePath, CommitTreeEntry>> treeHierarchy,
-        final ChangesetCommitItemReader previousChangesetCommitReader,
-        final Item item,
-        final TaskProgressMonitor progressMonitor)
-        throws Exception
-    {
+            final ObjectInserter repositoryInserter,
+            final Map<CommitTreePath, Map<CommitTreePath, CommitTreeEntry>> treeHierarchy,
+            final ChangesetCommitItemReader previousChangesetCommitReader,
+            final Item item,
+            final TaskProgressMonitor progressMonitor)
+            throws Exception {
         Check.notNull(repositoryInserter, "repositoryInserter"); //$NON-NLS-1$
         Check.notNull(treeHierarchy, "treeHierarchy"); //$NON-NLS-1$
         Check.notNull(previousChangesetCommitReader, "previousChangesetCommitReader"); //$NON-NLS-1$
         Check.notNull(item, "item"); //$NON-NLS-1$
         Check.notNull(progressMonitor, "progressMonitor"); //$NON-NLS-1$
 
-        if (item.getItemType() == ItemType.FOLDER)
-        {
+        if (item.getItemType() == ItemType.FOLDER) {
             return;
         }
 
@@ -239,41 +224,34 @@ public class CreateCommitForChangesetVersionSpecTask
         InputStream tempInputStream = null;
         ObjectId blobID = null;
 
-        try
-        {
+        try {
             blobID = previousChangesetCommitReader.getFileObjectId(item.getServerItem(), item.getChangeSetID());
 
-            if (blobID == null || ObjectId.equals(blobID, ObjectId.zeroId()))
-            {
+            if (blobID == null || ObjectId.equals(blobID, ObjectId.zeroId())) {
                 tempFile = File.createTempFile(GitTFConstants.GIT_TF_NAME, null, tempDir);
 
-                try
-                {
+                try {
                     versionControlService.downloadFile(item, tempFile.getAbsolutePath());
-                }
-                catch (VersionControlException e)
-                {
+                } catch (VersionControlException e) {
                     // if the user is denied read permissions on the file an
                     // exception will be thrown here.
 
                     final String itemName = item.getServerItem() == null ? "" : item.getServerItem(); //$NON-NLS-1$
 
                     progressMonitor.displayWarning(Messages.formatString(
-                        "CreateCommitForChangesetVersionSpecTask.NoContentDueToPermissionOrDestroyFormat", //$NON-NLS-1$
-                        itemName));
+                            "CreateCommitForChangesetVersionSpecTask.NoContentDueToPermissionOrDestroyFormat", //$NON-NLS-1$
+                            itemName));
 
                     log.error(e);
 
                     return;
-                }
-                catch (Throwable e)
-                {
+                } catch (Throwable e) {
                     /*
                      * A workaround for unexpected TFS server errors. Aged
                      * servers with long history might have some items corrupted
                      * in some change sets and return incorrect HTTP response to
                      * the download request.
-                     * 
+                     *
                      * In this case we'd better suppress the error and assume
                      * that the file does not exist. The next change set that
                      * contains this file will commit it into the repository. It
@@ -286,23 +264,20 @@ public class CreateCommitForChangesetVersionSpecTask
                     // change set the file will be marked as deleted in the
                     // repository.
 
-                    if (e instanceof IOException)
-                    {
+                    if (e instanceof IOException) {
                         throw (Exception) e;
-                    }
-                    else
-                    {
+                    } else {
                         final String itemName = item.getServerItem() == null ? "???" : item.getServerItem(); //$NON-NLS-1$
                         final String changeSetID =
-                            item.getChangeSetID() == 0 ? "???" : Integer.toString(item.getChangeSetID()); //$NON-NLS-1$
+                                item.getChangeSetID() == 0 ? "???" : Integer.toString(item.getChangeSetID()); //$NON-NLS-1$
                         final String checkinDate =
-                            item.getCheckinDate() == null ? "???" : item.getCheckinDate().toString(); //$NON-NLS-1$
+                                item.getCheckinDate() == null ? "???" : item.getCheckinDate().toString(); //$NON-NLS-1$
 
                         final String message =
-                            Messages.formatString("CreateCommitForChangesetVersionSpecTask.UnexpectedErrorFormat", //$NON-NLS-1$
-                                itemName,
-                                changeSetID,
-                                checkinDate);
+                                Messages.formatString("CreateCommitForChangesetVersionSpecTask.UnexpectedErrorFormat", //$NON-NLS-1$
+                                        itemName,
+                                        changeSetID,
+                                        checkinDate);
 
                         progressMonitor.displayWarning(message);
                         progressMonitor.displayWarning(e.getMessage());
@@ -313,13 +288,10 @@ public class CreateCommitForChangesetVersionSpecTask
                     }
                 }
 
-                if (tempFile.exists())
-                {
+                if (tempFile.exists()) {
                     tempInputStream = new FileInputStream(tempFile);
                     blobID = repositoryInserter.insert(OBJ_BLOB, tempFile.length(), tempInputStream);
-                }
-                else
-                {
+                } else {
                     blobID = ObjectId.zeroId();
                 }
             }
@@ -327,62 +299,50 @@ public class CreateCommitForChangesetVersionSpecTask
             FileMode fileMode = FileMode.REGULAR_FILE;
 
             /* handle executable files */
-            if (item.getPropertyValues() != null)
-            {
+            if (item.getPropertyValues() != null) {
                 if (PropertyConstants.EXECUTABLE_ENABLED_VALUE.equals(PropertyUtils.selectMatching(
-                    item.getPropertyValues(),
-                    PropertyConstants.EXECUTABLE_KEY)))
-                {
+                        item.getPropertyValues(),
+                        PropertyConstants.EXECUTABLE_KEY))) {
                     fileMode = FileMode.EXECUTABLE_FILE;
                 }
             }
 
             createBlob(repositoryInserter, treeHierarchy, item.getServerItem(), blobID, fileMode, progressMonitor);
-        }
-        finally
-        {
-            if (tempInputStream != null)
-            {
+        } finally {
+            if (tempInputStream != null) {
                 tempInputStream.close();
             }
 
-            if (tempFile != null)
-            {
+            if (tempFile != null) {
                 tempFile.delete();
             }
         }
     }
 
-    private String getMentions()
-    {
-        if (witClient == null)
-        {
+    private String getMentions() {
+        if (witClient == null) {
             return ""; //$NON-NLS-1$
         }
 
         final WorkItem[] workItems = getChangesetWorkItems(changesetID);
-        if (workItems == null)
-        {
+        if (workItems == null) {
             return ""; //$NON-NLS-1$
         }
 
         final StringBuilder sb = new StringBuilder();
 
-        for (final WorkItem workItem : workItems)
-        {
+        for (final WorkItem workItem : workItems) {
             addWorkItem(sb, workItem);
         }
 
         return sb.toString();
     }
 
-    public Item[] getCommittedItems()
-    {
+    public Item[] getCommittedItems() {
         return committedItems;
     }
 
-    private void addWorkItem(final StringBuilder sb, final WorkItem workItem)
-    {
+    private void addWorkItem(final StringBuilder sb, final WorkItem workItem) {
         sb.append(NEWLINE);
         sb.append(HASH);
 
@@ -394,29 +354,27 @@ public class CreateCommitForChangesetVersionSpecTask
     }
 
     private ObjectId createCommit(
-        final ObjectInserter repositoryInserter,
-        final ObjectId rootTree,
-        final Changeset changeset)
-        throws IOException
-    {
+            final ObjectInserter repositoryInserter,
+            final ObjectId rootTree,
+            final Changeset changeset)
+            throws IOException {
         Check.notNull(changeset, "changeset"); //$NON-NLS-1$
         Check.notNull(repositoryInserter, "repositoryInserter"); //$NON-NLS-1$
         Check.notNull(rootTree, "rootTree"); //$NON-NLS-1$
 
         return createCommit(
-            repositoryInserter,
-            rootTree,
-            parentCommitID,
-            changeset.getOwnerDisplayName(),
-            changeset.getOwner(),
-            changeset.getCommitterDisplayName(),
-            changeset.getCommitter(),
-            changeset.getDate(),
-            changeset.getComment() + getMentions());
+                repositoryInserter,
+                rootTree,
+                parentCommitID,
+                changeset.getOwnerDisplayName(),
+                changeset.getOwner(),
+                changeset.getCommitterDisplayName(),
+                changeset.getCommitter(),
+                changeset.getDate(),
+                changeset.getComment() + getMentions());
     }
 
-    private class ChangesetCommitItemReader
-    {
+    private class ChangesetCommitItemReader {
         private boolean initialized = false;
 
         private final int changesetID;
@@ -428,46 +386,37 @@ public class CreateCommitForChangesetVersionSpecTask
 
         private Map<String, Integer> changesetItems;
 
-        public ChangesetCommitItemReader(final int changesetId, final ObjectId commitId, final Item[] committedItems)
-        {
+        public ChangesetCommitItemReader(final int changesetId, final ObjectId commitId, final Item[] committedItems) {
             this.changesetID = changesetId;
             this.commitId = commitId;
             this.committedItems = committedItems;
         }
 
-        public ObjectId getFileObjectId(final String itemServerPath, final int requestedVersion)
-        {
-            if (!initialized)
-            {
+        public ObjectId getFileObjectId(final String itemServerPath, final int requestedVersion) {
+            if (!initialized) {
                 initialize();
             }
 
-            if (commitRevTree == null || objectReader == null)
-            {
+            if (commitRevTree == null || objectReader == null) {
                 return null;
             }
 
             TreeWalk file;
-            try
-            {
-                if (commitContainsFileAtVersion(itemServerPath, requestedVersion))
-                {
+            try {
+                if (commitContainsFileAtVersion(itemServerPath, requestedVersion)) {
                     file =
-                        TreeWalk.forPath(
-                            objectReader,
-                            ServerPath.makeRelative(itemServerPath, serverPath),
-                            commitRevTree);
+                            TreeWalk.forPath(
+                                    objectReader,
+                                    ServerPath.makeRelative(itemServerPath, serverPath),
+                                    commitRevTree);
 
-                    if (file == null)
-                    {
+                    if (file == null) {
                         return null;
                     }
 
                     return file.getObjectId(0);
                 }
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 // if we cannot read the object then we do not need to optimize
                 // the call
             }
@@ -475,53 +424,42 @@ public class CreateCommitForChangesetVersionSpecTask
             return null;
         }
 
-        private void initialize()
-        {
+        private void initialize() {
             Check.isTrue(initialized == false, "initialized == false"); //$NON-NLS-1$
 
             initialized = true;
 
-            if (commitId != null)
-            {
+            if (commitId != null) {
                 final RevWalk walker = new RevWalk(repository);
 
-                try
-                {
+                try {
                     final RevCommit revCommit = walker.parseCommit(commitId);
                     commitRevTree = revCommit.getTree();
                     objectReader = repository.newObjectReader();
-                }
-                catch (Exception e)
-                {
+                } catch (Exception e) {
                     // if we cannot read the object then we do not need to
                     // optimize the call
                     commitRevTree = null;
                     objectReader = null;
 
                     return;
-                }
-                finally
-                {
-                    if (walker != null)
-                    {
+                } finally {
+                    if (walker != null) {
                         walker.release();
                     }
                 }
 
                 changesetItems = new HashMap<String, Integer>(committedItems.length);
-                for (final Item item : committedItems)
-                {
+                for (final Item item : committedItems) {
                     changesetItems.put(item.getServerItem().toLowerCase(), item.getChangeSetID());
                 }
             }
         }
 
-        private boolean commitContainsFileAtVersion(final String filePath, final int requestedVersion)
-        {
+        private boolean commitContainsFileAtVersion(final String filePath, final int requestedVersion) {
             final String filePathKey = filePath.toLowerCase();
 
-            if (changesetItems.containsKey(filePathKey))
-            {
+            if (changesetItems.containsKey(filePathKey)) {
                 final int changesetVersionInChangeset = changesetItems.get(filePathKey);
                 return changesetVersionInChangeset == requestedVersion;
             }
@@ -530,10 +468,8 @@ public class CreateCommitForChangesetVersionSpecTask
         }
     }
 
-    public WorkItem[] getChangesetWorkItems(final int changesetID)
-    {
-        if (witClient == null)
-        {
+    public WorkItem[] getChangesetWorkItems(final int changesetID) {
+        if (witClient == null) {
             return null;
         }
 
@@ -545,8 +481,7 @@ public class CreateCommitForChangesetVersionSpecTask
         final WorkItemCollection collection = query.runQuery();
         final WorkItem[] workItems = new WorkItem[collection.size()];
 
-        for (int i = 0; i < collection.size(); i++)
-        {
+        for (int i = 0; i < collection.size(); i++) {
             workItems[i] = collection.getWorkItem(i);
         }
 
