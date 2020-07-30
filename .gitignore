@@ -7,6 +7,7 @@ output
 *~
 
 .idea
+*.iml
 
 /.metadata
 /com.microsoft.gittf.client.clc/.settings/org.eclipse.jdt.ui.prefs
