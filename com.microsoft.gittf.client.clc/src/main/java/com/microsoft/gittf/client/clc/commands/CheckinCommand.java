@@ -24,26 +24,11 @@
 
 package com.microsoft.gittf.client.clc.commands;
 
-import java.util.Collection;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.eclipse.jgit.lib.AbbreviatedObjectId;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-
 import com.microsoft.gittf.client.clc.Console.Verbosity;
 import com.microsoft.gittf.client.clc.ExitCode;
 import com.microsoft.gittf.client.clc.Main;
 import com.microsoft.gittf.client.clc.Messages;
-import com.microsoft.gittf.client.clc.arguments.Argument;
-import com.microsoft.gittf.client.clc.arguments.ArgumentOptions;
-import com.microsoft.gittf.client.clc.arguments.ChoiceArgument;
-import com.microsoft.gittf.client.clc.arguments.SwitchArgument;
-import com.microsoft.gittf.client.clc.arguments.ValueArgument;
+import com.microsoft.gittf.client.clc.arguments.*;
 import com.microsoft.gittf.client.clc.commands.framework.CommandTaskExecutor;
 import com.microsoft.gittf.client.clc.commands.framework.ConsoleOutputTaskHandler;
 import com.microsoft.gittf.core.config.GitTFConfiguration;
@@ -53,112 +38,113 @@ import com.microsoft.gittf.core.tasks.framework.TaskCompletedHandler;
 import com.microsoft.gittf.core.tasks.framework.TaskStatus;
 import com.microsoft.gittf.core.tasks.pendDiff.RenameMode;
 import com.microsoft.tfs.core.clients.versioncontrol.exceptions.ActionDeniedBySubscriberException;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.CheckinNote;
+import com.microsoft.tfs.core.clients.versioncontrol.soapextensions.CheckinNoteFieldValue;
 import com.microsoft.tfs.core.clients.workitem.WorkItemClient;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.eclipse.jgit.lib.AbbreviatedObjectId;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+
+import java.util.Collection;
 
 public class CheckinCommand
         extends PendingChangesCommand {
-    public static final String COMMAND_NAME = "checkin"; //$NON-NLS-1$
+    public static final String COMMAND_NAME = "checkin";
 
     private static final Log log = LogFactory.getLog(CheckinCommand.class);
 
     private static final CheckinTaskCompletedHandler checkinTaskCompletedHandler = new CheckinTaskCompletedHandler();
 
-    private static Argument[] ARGUMENTS = new Argument[]
-            {
-                    new SwitchArgument("help", Messages.getString("Command.Argument.Help.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+    private static Argument[] ARGUMENTS = new Argument[]{
+            new SwitchArgument("help", Messages.getString("Command.Argument.Help.HelpText")),
 
-                    new ChoiceArgument(Messages.getString("Command.Argument.Display.HelpText"), //$NON-NLS-1$
-                            new SwitchArgument("quiet", //$NON-NLS-1$
-                                    'q',
-                                    Messages.getString("Command.Argument.Quiet.HelpText")), //$NON-NLS-1$
+            new ChoiceArgument(Messages.getString("Command.Argument.Display.HelpText"),
+                    new SwitchArgument("quiet",
+                            'q',
+                            Messages.getString("Command.Argument.Quiet.HelpText")),
 
-                            new SwitchArgument("verbose", //$NON-NLS-1$
-                                    Messages.getString("Command.Argument.Verbose.HelpText")) //$NON-NLS-1$
-                    ),
+                    new SwitchArgument("verbose",
+                            Messages.getString("Command.Argument.Verbose.HelpText"))
+            ),
 
-                    new ValueArgument("message", //$NON-NLS-1$
-                            'm',
-                            Messages.getString("CheckinCommand.Argument.Message.ValueDescription"), //$NON-NLS-1$
-                            Messages.getString("CheckinCommand.Argument.Message.HelpText"), //$NON-NLS-1$
-                            ArgumentOptions.VALUE_REQUIRED),
+            new ValueArgument("message",
+                    'm',
+                    Messages.getString("CheckinCommand.Argument.Message.ValueDescription"),
+                    Messages.getString("CheckinCommand.Argument.Message.HelpText"),
+                    ArgumentOptions.VALUE_REQUIRED),
 
-                    new ChoiceArgument(Messages.getString("CheckinCommand.Argument.MetaDataChoice.HelpText"), //$NON-NLS-1$
-                            /* Users can specify one of --metadata or --no-metadata. */
-                            new SwitchArgument("metadata", //$NON-NLS-1$
-                                    Messages.getString("CheckinCommand.Argument.MetaData.HelpText")), //$NON-NLS-1$
+            new ChoiceArgument(Messages.getString("CheckinCommand.Argument.MetaDataChoice.HelpText"),
+                    new SwitchArgument("metadata",
+                            Messages.getString("CheckinCommand.Argument.MetaData.HelpText")),
 
-                            new SwitchArgument("no-metadata", //$NON-NLS-1$
-                                    Messages.getString("CheckinCommand.Argument.NoMetaData.HelpText")) //$NON-NLS-1$
-                    ),
+                    new SwitchArgument("no-metadata",
+                            Messages.getString("CheckinCommand.Argument.NoMetaData.HelpText"))
+            ),
 
-                    new ValueArgument("renamemode", //$NON-NLS-1$
-                            Messages.getString("PendingChangesCommand.Argument.RenameMode.ValueDescription"), //$NON-NLS-1$
-                            Messages.getString("PendingChangesCommand.Argument.RenameMode.HelpText"), //$NON-NLS-1$
-                            ArgumentOptions.VALUE_REQUIRED),
+            new ValueArgument("renamemode",
+                    Messages.getString("PendingChangesCommand.Argument.RenameMode.ValueDescription"),
+                    Messages.getString("PendingChangesCommand.Argument.RenameMode.HelpText"),
+                    ArgumentOptions.VALUE_REQUIRED),
 
-                    new ChoiceArgument(Messages.getString("CheckinCommand.Argument.DepthChoice.HelpText"), //$NON-NLS-1$
-                            /* Users can specify one of --deep, --depth or --shallow. */
-                            new SwitchArgument("deep", //$NON-NLS-1$
-                                    Messages.getString("CheckinCommand.Argument.Deep.HelpText")), //$NON-NLS-1$
+            new ChoiceArgument(Messages.getString("CheckinCommand.Argument.DepthChoice.HelpText"),
+                    new SwitchArgument("deep",
+                            Messages.getString("CheckinCommand.Argument.Deep.HelpText")),
 
-                            new SwitchArgument("shallow", //$NON-NLS-1$
-                                    Messages.getString("CheckinCommand.Argument.Shallow.HelpText")) //$NON-NLS-1$
-                    ),
+                    new SwitchArgument("shallow",
+                            Messages.getString("CheckinCommand.Argument.Shallow.HelpText"))
+            ),
 
-                    new ChoiceArgument(Messages.getString("CheckinCommand.Argument.SquashAutoSquash.HelpText"), //$NON-NLS-1$
-                            /*
-                             * User can specify one of --squash:[commit id],[commit id] or
-                             * --autosquash
-                             */
-                            new ValueArgument("squash", //$NON-NLS-1$
-                                    Messages.getString("CheckinCommand.Argument.Squash.ValueDescription"), //$NON-NLS-1$
-                                    Messages.getString("CheckinCommand.Argument.Squash.HelpText"), //$NON-NLS-1$
-                                    ArgumentOptions.VALUE_REQUIRED.combine(ArgumentOptions.MULTIPLE)),
-
-                            new SwitchArgument("autosquash", //$NON-NLS-1$
-                                    Messages.getString("CheckinCommand.Argument.AutoSquash.HelpText")) //$NON-NLS-1$
-                    ),
-
-                    new ValueArgument("resolve", //$NON-NLS-1$
-                            Messages.getString("PendingChangesCommand.Argument.Resolve.ValueDescription"), //$NON-NLS-1$
-                            Messages.getString("PendingChangesCommand.Argument.Resolve.HelpText"), //$NON-NLS-1$
+            new ChoiceArgument(Messages.getString("CheckinCommand.Argument.SquashAutoSquash.HelpText"),
+                    new ValueArgument("squash",
+                            Messages.getString("CheckinCommand.Argument.Squash.ValueDescription"),
+                            Messages.getString("CheckinCommand.Argument.Squash.HelpText"),
                             ArgumentOptions.VALUE_REQUIRED.combine(ArgumentOptions.MULTIPLE)),
 
-                    new ValueArgument("associate", //$NON-NLS-1$
-                            Messages.getString("PendingChangesCommand.Argument.Associate.ValueDescription"), //$NON-NLS-1$
-                            Messages.getString("PendingChangesCommand.Argument.Associate.HelpText"), //$NON-NLS-1$
-                            ArgumentOptions.VALUE_REQUIRED.combine(ArgumentOptions.MULTIPLE)),
+                    new SwitchArgument("autosquash",
+                            Messages.getString("CheckinCommand.Argument.AutoSquash.HelpText"))
+            ),
 
-                    new SwitchArgument("mentions", Messages.getString("Command.Argument.Mentions.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+            new ValueArgument("resolve",
+                    Messages.getString("PendingChangesCommand.Argument.Resolve.ValueDescription"),
+                    Messages.getString("PendingChangesCommand.Argument.Resolve.HelpText"),
+                    ArgumentOptions.VALUE_REQUIRED.combine(ArgumentOptions.MULTIPLE)),
 
-                    new SwitchArgument("no-lock", Messages.getString("CheckinCommand.Argument.NoLock.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+            new ValueArgument("associate",
+                    Messages.getString("PendingChangesCommand.Argument.Associate.ValueDescription"),
+                    Messages.getString("PendingChangesCommand.Argument.Associate.HelpText"),
+                    ArgumentOptions.VALUE_REQUIRED.combine(ArgumentOptions.MULTIPLE)),
 
-                    new SwitchArgument("preview", 'p', Messages.getString("CheckinCommand.Argument.Preview.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
+            new SwitchArgument("mentions", Messages.getString("Command.Argument.Mentions.HelpText")),
 
-                    new ChoiceArgument(Messages.getString("CheckinCommand.Argument.GatedBuild.HelpText"), //$NON-NLS-1$
-                            /*
-                             * User can specify one of --gated:[gatedbuildName] or --bypass
-                             */
-                            new SwitchArgument("bypass", //$NON-NLS-1$
-                                    Messages.getString("CheckinCommand.Argument.Bypass.HelpText")), //$NON-NLS-1$
+            new SwitchArgument("lock", Messages.getString("CheckinCommand.Argument.Lock.HelpText")),
 
-                            new ValueArgument("gated", //$NON-NLS-1$
-                                    'g',
-                                    Messages.getString("CheckinCommand.Argument.Gated.ValueDescription"), //$NON-NLS-1$
-                                    Messages.getString("CheckinCommand.Argument.Gated.HelpText"), //$NON-NLS-1$
-                                    ArgumentOptions.VALUE_REQUIRED)),
+            new SwitchArgument("preview", 'p', Messages.getString("CheckinCommand.Argument.Preview.HelpText")),
 
-                    new ChoiceArgument(
-                            // no help text
-                            new SwitchArgument("keep-author", Messages.getString("CheckinCommand.Argument.KeepAuthor.HelpText")), //$NON-NLS-1$ //$NON-NLS-2$
-                            new SwitchArgument("ignore-author", Messages.getString("CheckinCommand.Argument.IgnoreAuthor.HelpText")) //$NON-NLS-1$ //$NON-NLS-2$
-                    ),
+            new ChoiceArgument(Messages.getString("CheckinCommand.Argument.GatedBuild.HelpText"),
+                    new SwitchArgument("bypass",
+                            Messages.getString("CheckinCommand.Argument.Bypass.HelpText")),
 
-                    new ValueArgument("user-map", //$NON-NLS-1$
-                            Messages.getString("CheckinCommand.Argument.UserMap.ValueDescription"), //$NON-NLS-1$
-                            Messages.getString("CheckinCommand.Argument.UserMap.HelpText")) //$NON-NLS-1$
+                    new ValueArgument("gated",
+                            'g',
+                            Messages.getString("CheckinCommand.Argument.Gated.ValueDescription"),
+                            Messages.getString("CheckinCommand.Argument.Gated.HelpText"),
+                            ArgumentOptions.VALUE_REQUIRED)),
 
-            };
+            new ChoiceArgument(
+                    new SwitchArgument("keep-author", Messages.getString("CheckinCommand.Argument.KeepAuthor.HelpText")),
+                    new SwitchArgument("ignore-author", Messages.getString("CheckinCommand.Argument.IgnoreAuthor.HelpText"))
+            ),
+
+            new ValueArgument("user-map",
+                    Messages.getString("CheckinCommand.Argument.UserMap.ValueDescription"),
+                    Messages.getString("CheckinCommand.Argument.UserMap.HelpText"))
+
+    };
 
     @Override
     protected String getCommandName() {
@@ -172,75 +158,70 @@ public class CheckinCommand
 
     @Override
     public String getHelpDescription() {
-        return Messages.getString("CheckinCommand.HelpDescription"); //$NON-NLS-1$
+        return Messages.getString("CheckinCommand.HelpDescription");
     }
 
     @Override
-    public int run()
-            throws Exception {
+    public int run() throws Exception {
 
-        log.debug("Verifying configuration"); //$NON-NLS-1$
+        log.debug("Verifying configuration");
 
         verifyGitTfConfigured();
         verifyRepoSafeState();
 
         GitTFConfiguration currentConfiguration = GitTFConfiguration.loadFrom(getRepository());
 
-        log.debug("Paring command parameters"); //$NON-NLS-1$
+        log.debug("Paring command parameters");
 
         boolean deep = currentConfiguration.getDeep();
         deep = isDepthSpecified() ? getDeepFromArguments() : deep;
 
-        boolean mentions = getArguments().contains("mentions"); //$NON-NLS-1$
+        boolean mentions = getArguments().contains("mentions");
 
-        if (getArguments().contains("squash") && !getArguments().contains("deep")) //$NON-NLS-1$ //$NON-NLS-2$
-        {
-            throw new Exception(Messages.getString("CheckinCommand.SquashOnlyAvailableWithDeep")); //$NON-NLS-1$
+        if (getArguments().contains("squash") && !getArguments().contains("deep")) {
+            throw new Exception(Messages.getString("CheckinCommand.SquashOnlyAvailableWithDeep"));
         }
 
-        final boolean noLock = getArguments().contains("no-lock"); //$NON-NLS-1$
-        final boolean preview = getArguments().contains("preview"); //$NON-NLS-1$
-        final boolean overrideGatedCheckin = getArguments().contains("bypass"); //$NON-NLS-1$
-        final boolean autoSquashMultipleParents = getArguments().contains("autosquash"); //$NON-NLS-1$
+        final boolean lock = getArguments().contains("lock");
+        final boolean preview = getArguments().contains("preview");
+        final boolean overrideGatedCheckin = getArguments().contains("bypass");
+        final boolean autoSquashMultipleParents = getArguments().contains("autosquash");
 
         boolean includeMetaData = currentConfiguration.getIncludeMetaData();
         includeMetaData = isIncludeMetaDataSpecified() ? getIncludeMetaDataFromArguments() : includeMetaData;
 
-        String message = getArguments().contains("message") ? //$NON-NLS-1$
-                ((ValueArgument) getArguments().getArgument("message")).getValue() : null; //$NON-NLS-1$
+        String message = getArguments().contains("message") ?
+                ((ValueArgument) getArguments().getArgument("message")).getValue() : null;
 
         if (deep && message != null) {
-            Main.printWarning(Messages.getString("CheckinCommand.MessageWillBeIgnoreBecauseDeepSpecified")); //$NON-NLS-1$
-
+            Main.printWarning(Messages.getString("CheckinCommand.MessageWillBeIgnoreBecauseDeepSpecified"));
             message = null;
         }
 
-        final String buildDefinition = getArguments().contains("gated") ? //$NON-NLS-1$
-                ((ValueArgument) getArguments().getArgument("gated")).getValue() : null; //$NON-NLS-1$
+        final String buildDefinition = getArguments().contains("gated") ? ((ValueArgument) getArguments().getArgument("gated")).getValue() : null;
 
         final RenameMode renameMode = getRenameModeIfSpecified();
 
-        boolean keepAuthor = (getArguments().contains("keep-author") //$NON-NLS-1$
-                || !getArguments().contains("ignore-author") && currentConfiguration.getKeepAuthor()); //$NON-NLS-1$
+        boolean keepAuthor = (getArguments().contains("keep-author") || !getArguments().contains("ignore-author") && currentConfiguration.getKeepAuthor());
 
         if (!deep && keepAuthor) {
-            Main.printWarning("the check-in authors will be ignored because --deep is not specified"); //$NON-NLS-1$
+            Main.printWarning("the check-in authors will be ignored because --deep is not specified");
             keepAuthor = false;
         }
 
-        final String userMapPath = getArguments().contains("user-map") ? //$NON-NLS-1$
-                ((ValueArgument) getArguments().getArgument("user-map")).getValue() : //$NON-NLS-1$
-                currentConfiguration.getUserMap();
+        final String userMapPath = getArguments().contains("user-map") ? ((ValueArgument) getArguments().getArgument("user-map")).getValue() : currentConfiguration.getUserMap();
 
-        log.debug("Createing CheckinHeadCommitTask"); //$NON-NLS-1$
+        final String note = getArguments().contains("note") ? ((ValueArgument) getArguments().getArgument("note")).getValue() : null;
+
+        log.debug("Createing CheckinHeadCommitTask");
 
         final WorkItemClient witClient = mentions ? getConnection().getWorkItemClient() : null;
-        final CheckinHeadCommitTask checkinTask =
-                new CheckinHeadCommitTask(getRepository(), getVersionControlClient(), witClient);
+        final CheckinHeadCommitTask checkinTask = new CheckinHeadCommitTask(getRepository(), getVersionControlClient(), witClient);
+        CheckinNote checkinNote = buildCheckinNote(note);
 
         checkinTask.setWorkItemCheckinInfo(getWorkItemCheckinInfo());
         checkinTask.setDeep(deep);
-        checkinTask.setLock(!noLock);
+        checkinTask.setLock(lock);
         checkinTask.setPreview(preview);
         checkinTask.setMentions(mentions);
         checkinTask.setOverrideGatedCheckin(overrideGatedCheckin);
@@ -252,29 +233,41 @@ public class CheckinCommand
         checkinTask.setRenameMode(renameMode);
         checkinTask.setKeepAuthor(keepAuthor);
         checkinTask.setUserMapPath(userMapPath);
+        checkinTask.setCheckinNote(checkinNote);
 
-        /*
-         * Hook up a custom task executor that does not print gated errors to
-         * standard error (we handle those specially.)
-         */
-        log.debug("Starting CheckinHeadCommitTask"); //$NON-NLS-1$
+        log.debug("Starting CheckinHeadCommitTask");
         final CommandTaskExecutor taskExecutor = new CommandTaskExecutor(getProgressMonitor());
         taskExecutor.removeTaskCompletedHandler(CommandTaskExecutor.CONSOLE_OUTPUT_TASK_HANDLER);
         taskExecutor.addTaskCompletedHandler(checkinTaskCompletedHandler);
 
         final TaskStatus checkinStatus = taskExecutor.execute(checkinTask);
 
-        log.debug("CheckinHeadCommitTask finished"); //$NON-NLS-1$
+        log.debug("CheckinHeadCommitTask finished");
 
         if (checkinStatus.isOK() && checkinStatus.getCode() == CheckinHeadCommitTask.ALREADY_UP_TO_DATE) {
-            getConsole().getOutputStream(Verbosity.NORMAL).println(Messages.getString("CheckinCommand.AlreadyUpToDate")); //$NON-NLS-1$
+            getConsole().getOutputStream(Verbosity.NORMAL).println(Messages.getString("CheckinCommand.AlreadyUpToDate"));
         }
 
         return checkinStatus.isOK() ? ExitCode.SUCCESS : ExitCode.FAILURE;
     }
 
-    private AbbreviatedObjectId[] getSquashCommitIDs()
-            throws Exception {
+    private CheckinNote buildCheckinNote(String note) {
+        if (note != null) {
+            String[] notes = note.split(",");
+            CheckinNoteFieldValue[] values = new CheckinNoteFieldValue[notes.length];
+            for (int i = 0; i < notes.length; i++) {
+                String[] n = notes[i].split(":");
+                CheckinNoteFieldValue checkinNoteFieldValue = new CheckinNoteFieldValue();
+                checkinNoteFieldValue.setName(n[0]);
+                checkinNoteFieldValue.setValue(n[1]);
+                values[i] = checkinNoteFieldValue;
+            }
+            return new CheckinNote(values);
+        }
+        return null;
+    }
+
+    private AbbreviatedObjectId[] getSquashCommitIDs() throws Exception {
         Repository repository = getRepository();
 
         ObjectReader objReader = null;
@@ -283,9 +276,9 @@ public class CheckinCommand
             objReader = repository.newObjectReader();
             revWalk = new RevWalk(repository);
 
-            Argument[] squashPrefixArgs = getArguments().getArguments("squash"); //$NON-NLS-1$
+            Argument[] squashPrefixArgs = getArguments().getArguments("squash");
 
-            if (squashPrefixArgs == null || squashPrefixArgs.length == 0) {
+            if (squashPrefixArgs.length == 0) {
                 return null;
             }
 
@@ -299,23 +292,21 @@ public class CheckinCommand
                 try {
                     candidateObjects = objReader.resolve(squashCommitIDs[i]);
                 } catch (Exception e) {
-                    /*
-                     * commit id could not be resolved by git
-                     */
+                    e.printStackTrace();
                 }
 
                 if (candidateObjects == null || candidateObjects.size() == 0) {
                     throw new Exception(Messages.formatString(
-                            "CheckinCommand.CommitIdAmbiguousFormat", squashCommitIDs[i].name())); //$NON-NLS-1$
+                            "CheckinCommand.CommitIdAmbiguousFormat", squashCommitIDs[i].name()));
                 } else if (candidateObjects.size() > 1) {
                     throw new Exception(Messages.formatString(
-                            "CheckinCommand.CommitIdAmbiguousFormat", squashCommitIDs[i].name())); //$NON-NLS-1$
+                            "CheckinCommand.CommitIdAmbiguousFormat", squashCommitIDs[i].name()));
                 } else {
                     RevCommit revCommit = revWalk.parseCommit(candidateObjects.toArray(new ObjectId[1])[0]);
 
                     if (revCommit == null) {
                         throw new Exception(Messages.formatString(
-                                "CheckinCommand.CommitIdDoesNotExistFormat", squashCommitIDs[i].name())); //$NON-NLS-1$
+                                "CheckinCommand.CommitIdDoesNotExistFormat", squashCommitIDs[i].name()));
                     }
                 }
             }
@@ -332,17 +323,14 @@ public class CheckinCommand
         }
     }
 
-    private static class CheckinTaskCompletedHandler
-            implements TaskCompletedHandler {
+    private static class CheckinTaskCompletedHandler implements TaskCompletedHandler {
         private static final ConsoleOutputTaskHandler consoleOutputTaskHandler = new ConsoleOutputTaskHandler();
 
         public void onTaskCompleted(Task task, TaskStatus status) {
-            if (status.getSeverity() == TaskStatus.ERROR
-                    && status.getException() instanceof ActionDeniedBySubscriberException) {
-                Main.printError(Messages.getString("CheckinCommand.GatedCheckinAborted")); //$NON-NLS-1$
+            if (status.getSeverity() == TaskStatus.ERROR && status.getException() instanceof ActionDeniedBySubscriberException) {
+                Main.printError(Messages.getString("CheckinCommand.GatedCheckinAborted"));
                 Main.printError(status.getException().getLocalizedMessage(), false);
             } else {
-                /* Delegate to console output handler */
                 consoleOutputTaskHandler.onTaskCompleted(task, status);
             }
         }
