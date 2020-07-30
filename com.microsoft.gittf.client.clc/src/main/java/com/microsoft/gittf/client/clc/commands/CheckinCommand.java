@@ -252,7 +252,7 @@ public class CheckinCommand
     }
 
     private CheckinNote buildCheckinNote(String note) {
-        if (note != null) {
+        if (note != null && note.contains(":")) {
             String[] notes = note.split(",");
             CheckinNoteFieldValue[] values = new CheckinNoteFieldValue[notes.length];
             for (int i = 0; i < notes.length; i++) {
